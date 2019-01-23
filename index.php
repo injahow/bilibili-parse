@@ -1,7 +1,7 @@
 <html>
 <head>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-<title>flv解析</title>
+<title>B-flv解析</title>
 <style>
 .mainContainer {
 display: block;
@@ -41,11 +41,11 @@ if(file_exists($file)){
 $msg = file_get_contents($file);//使用file_get_contents函数获取url
 $array = get_headers($msg,1);
 //echo $array[0];//测试返回代码
-if(preg_match('/453/',$array[0])){//判断url453不可访问则为有效//如果upos返回403不可解析
-	} else {//url无效,getapi.php重写url
+//if(preg_match('/453/',$array[0])){//判断url453不可访问则为有效//如果upos返回403不可解析/
+	//} else {//url无效,getapi.php重写url
 	include 'getapi.php';
-	echo "<script language=JavaScript> location.replace(location.href);</script>";//php刷新页面
-	}
+	//echo "<script language=JavaScript> location.replace(location.href);</script>";//php刷新页面
+	//}
 }
 ?>
 <div class="mainContainer">
