@@ -3,7 +3,7 @@ $av = "810872";//视频的av编号
 $cid = getcid($av);
 $api = getapi($cid);
 $msg = getjson($api);
-echo $api;//测试视频api能否解析
+//echo $api;//测试视频api能否解析
 $result=array();
 preg_match_all("/(?:http)(.*)(?:backup_url)/i",$msg, $result);//匹配url大致字符串
 $flvurl = $result[1][0];
