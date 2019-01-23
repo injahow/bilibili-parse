@@ -38,8 +38,8 @@ margin-right: auto;
 <?php
 $file = "geturl.txt";
 if(file_exists($file)){
-$msg = file_get_contents($file);//使用file_get_contents函数获取url
-$array = get_headers($msg,1);
+//$msg = file_get_contents($file);//使用file_get_contents函数获取url
+//$array = get_headers($msg,1);
 //echo $array[0];//测试返回代码
 //if(preg_match('/453/',$array[0])){//判断url453不可访问则为有效//如果upos返回403不可解析/
 	//} else {//url无效,getapi.php重写url
