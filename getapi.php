@@ -30,7 +30,7 @@ function getapi($cid) {//核心代码————解析函数
 }
 function getjson($url) {
 	$curl = curl_init();//创建一个新的CURL资源
-	$headers = randIp();
+	$headers = randIP();
 	curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
 	curl_setopt ($curl, CURLOPT_REFERER, "http://bilibili.com");//伪造请求源referer
 	curl_setopt($curl,CURLOPT_URL,$url);//设置URL和相应的选项
