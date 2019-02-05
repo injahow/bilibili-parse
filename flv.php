@@ -3,7 +3,7 @@ $file = "geturl.txt";
 if(file_exists($file)){
 $url1 = file_get_contents($file);//使用file_get_contents函数获取url
 $curl = curl_init();//创建一个新的CURL资源
-$headers = randIp();
+$headers = randIP();
 curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
 curl_setopt ($curl, CURLOPT_REFERER, "http://bilibili.com");//伪造请求源referer
 curl_setopt($curl,CURLOPT_URL,$url1);//设置URL和相应的选项
