@@ -23,7 +23,7 @@ exit;//结束所有脚本
 $cid = getcid($av,$p);
 $api = getapi($cid,$q);
 $msg = getjson($api);
-echo $api;//测试视频api能否解析
+//echo $api;//测试视频api能否解析
 $json = json_decode($msg);//json字符串对象化获取相关数据
 header("Content-Type: text/html; charset=UTF-8");//定义头文件，防止乱码
 $durl_0 = $json->durl[0];
