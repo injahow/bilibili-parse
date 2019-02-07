@@ -4,10 +4,15 @@ $array = query_array($query);
 if (array_key_exists("av",$array)) {//av参数存在
 $av = $_GET['av'];
 setcookie("av",$av);
-    if (array_key_exists("q",$array)) {//p参数存在
-        $q = $_GET['q'];
-    } else {//q参数不存在
-        $q = "64";
+	if (array_key_exists("q",$array)) {//q参数存在
+	$q = $_GET['q'];
+	} else {//q参数不存在
+    $q = "64";
+    }
+  	if (array_key_exists("p",$array)) {//p参数存在
+	$p = $_GET['p'];
+	} else {//p参数不存在
+    $p = "1";
     }
 } else {//av参数不存在
 echo('<script type="text/javascript"> alert("参数有误！！！");</script>');
@@ -15,10 +20,10 @@ exit;//结束所有脚本
 }
 //$av = $_COOKIE["av"];//"810872";//视频的av编号
 //$q = $_COOKIE["q"];//"16";//视频的清晰度编号
-$cid = getcid($av);
+$cid = getcid($av,$p);
 $api = getapi($cid,$q);
 $msg = getjson($api);
-//echo $api;//测试视频api能否解析
+echo $api;//测试视频api能否解析
 $json = json_decode($msg);//json字符串对象化获取相关数据
 header("Content-Type: text/html; charset=UTF-8");//定义头文件，防止乱码
 $durl_0 = $json->durl[0];
@@ -33,8 +38,8 @@ $getjson = json_encode($getjson);//php数组json字符串化
 $file = "./geturl/".$av.".json";
 writeurl($file ,$getjson);
 
-function getcid($av) {//已知av获取cid
-	$api = "http://api.bilibili.com/view?type=&appkey=84956560bc028eb7&id=".$av;
+function getcid($av,$p) {//已知av获取cid
+	$api = "http://api.bilibili.com/view?type=&appkey=84956560bc028eb7&id=".$av."&page=".$p;
 	$json = getjson($api);
 	$result=array();
 	preg_match_all("/(?:cid)(.*)(?:partname)/i",$json, $result);//匹配cid大致字符串
