@@ -36,17 +36,7 @@ margin-right: auto;
 </head>
 <body>
 <?php
-$file = "geturl.txt";
-if(file_exists($file)){
-//$msg = file_get_contents($file);//使用file_get_contents函数获取url
-//$array = get_headers($msg,1);
-//echo $array[0];//测试返回代码
-//if(preg_match('/453/',$array[0])){//判断url453不可访问则为有效//如果upos返回403不可解析/
-	//} else {//url无效,getapi.php重写url
-	include 'getapi.php';
-	//echo "<script language=JavaScript> location.replace(location.href);</script>";//php刷新页面
-	//}
-}
+include 'getapi.php';
 ?>
 <div class="mainContainer">
 <video id="videoElement" class="centeredVideo" controls autoplay width="1024" height="576"></video>
@@ -69,7 +59,7 @@ if(file_exists($file)){
          var flvPlayer = flvjs.createPlayer({type: 'flv',//此处可添加设置
         url: 'flv.php',//<==自行修改
             }, {
-		lazyLoadMaxDuration: 10 * 60 //前面数值对应单位缓存差18s//此处具体参数可以通过获得的视频具体时长计算
+		lazyLoadMaxDuration: 15 * 60 //前面数值对应单位缓存差18s//此处具体参数可以通过获得的视频具体时长计算
 			});
             flvPlayer.attachMediaElement(videoElement);
             flvPlayer.load(); //加载
