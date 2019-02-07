@@ -1,20 +1,26 @@
 <?php
-$file = "geturl.txt";
+$av =  $_COOKIE["av"];
+$file = "./geturl/".$av.".json";
 if(file_exists($file)){
-$url1 = file_get_contents($file);//使用file_get_contents函数获取url
+$msg = file_get_contents($file);//使用file_get_contents函数获取url
+$json = json_decode($msg);//json字符串对象化
+header("Content-Type: text/html; charset=UTF-8");//定义头文件，防止乱码
+$durl_0 = $json->durl[0];
+$flvurl = $durl_0->url;
+
 $curl = curl_init();//创建一个新的CURL资源
 $headers = randIP();
-curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
-curl_setopt ($curl, CURLOPT_REFERER, "http://bilibili.com");//伪造请求源referer
-curl_setopt($curl,CURLOPT_URL,$url1);//设置URL和相应的选项
+curl_setopt($curl,CURLOPT_HTTPHEADER, $headers);//伪造请求ip
+curl_setopt($curl,CURLOPT_REFERER, "http://bilibili.com");//伪造请求源referer
+curl_setopt($curl,CURLOPT_URL,$flvurl);//设置URL和相应的选项
 curl_setopt($curl,CURLOPT_HEADER,0);//0表示不输出Header，1表示输出
-//curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);//flv与php同化，数据直接输出到页面
+//curl_setopt($curl,CURLOPT_RETURNTRANSFER, 1);//flv与php同化，数据直接输出到页面
 curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,false);
 curl_setopt($curl,CURLOPT_SSL_VERIFYHOST,false);
 curl_setopt($curl,CURLOPT_ENCODING,'');//设置编码格式，为空表示支持所有格式的编码//header中“Accept-Encoding: ”部分的内容，支持的编码格式为："identity"，"deflate"，"gzip"
 $UserAgent="Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.66 Safari/537.36";
 curl_setopt($curl,CURLOPT_USERAGENT,$UserAgent);//模拟windows用户正常访问
-curl_setopt($curl,CURLOPT_FOLLOWLOCATION,1);//设置这个选项为一个非零值(象 “Location: “)的头，服务器会把它当做HTTP头的一部分发送(注意这是递归的，PHP将发送形如 “Location: “的头)
+//curl_setopt($curl,CURLOPT_FOLLOWLOCATION,1);//设置这个选项为一个非零值(象“Location:“)的头，服务器会把它当做HTTP头的一部分发送(注意这是递归的，PHP将发送形如 “Location: “的头)
 curl_exec($curl);
 curl_close($curl);
 }
@@ -33,12 +39,12 @@ function randIP(){//随机ip
        );
        $rand_key = mt_rand(0, 9);
        $ip= long2ip(mt_rand($ip_long[$rand_key][0], $ip_long[$rand_key][1]));
-       $headers['CLIENT-IP'] = $ip; 
-       $headers['X-FORWARDED-FOR'] = $ip; 
-       $headerArr = array(); 
-       foreach( $headers as $n => $v ) { 
-           $headerArr[] = $n .':' . $v;  
+       $headers['CLIENT-IP'] = $ip;
+       $headers['X-FORWARDED-FOR'] = $ip;
+       $headerArr = array();
+       foreach( $headers as $n => $v ) {
+           $headerArr[] = $n .':' . $v;
        }
-       return $headerArr;    
+       return $headerArr;
    }
 ?>
