@@ -12,4 +12,4 @@ B站flv视频源解析地址
 
 
 ## 项目演示
-https://injahow.com/mylab/2
+https://api.injahow.cn/bparse/?av=42858217&p=1&q=16&otype=json
