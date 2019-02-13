@@ -11,3 +11,4 @@ q =“16/32/64/80/...”(默认64)
 
 ## 项目演示
 https://api.injahow.cn/bparse/?av=42858217&p=1&q=80&otype=json
+（暂时无法访问）
