@@ -50,9 +50,9 @@ $getjson = json_encode($getjson);//php数组json字符串化
 $file = "./geturl/".$av.".json";
 writeurl($file ,$getjson);
 //echo $durl_0[0];
-function getcid($av,$p) {//已知av获取cid
+function getcid($aid,$p) {//已知av获取cid
   /*
-	$api = "http://api.bilibili.com/view?type=&appkey=84956560bc028eb7&id=".$av."&page=".$p;
+	$api = "http://api.bilibili.com/view?type=&appkey=84956560bc028eb7&id=".$aid."&page=".$p;
     //echo $api;//测试能否获取cid
 	$json = getjson($api);
 	$result=array();
@@ -60,7 +60,7 @@ function getcid($av,$p) {//已知av获取cid
 	$cid = $result[1][0];
 	$cid = substr($cid, 2, strlen($cid)-4);//加工截取得到cid
   */
-    $api = "https://api.bilibili.com/x/web-interface/view?aid=".$av;
+    $api = "https://api.bilibili.com/x/web-interface/view?aid=".$aid;
     $json = getjson($api);
     $json = json_decode($json);
     $data = $json->data;
