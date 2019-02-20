@@ -1,5 +1,5 @@
 <?php
-header("Content-Type: text/html;charset=utf-8");
+header("Content-Type: text/html; charset=UTF-8");//定义头文件，防止乱码
 $query = $_SERVER["QUERY_STRING"];//获取url后参数
 $array = query_array($query);
 if (array_key_exists("av",$array)) {//av参数必须存在
@@ -37,7 +37,6 @@ $msg = getjson($api);
 //echo $api;//测试视频api能否解析
 //echo $msg;//测试服务器实际解析
 $json = json_decode($msg);//json字符串对象化获取相关数据
-header("Content-Type: text/html; charset=UTF-8");//定义头文件，防止乱码
 $durl_0 = $json->durl[0];
 $q = $json->quality;
 /*下略补充*/
