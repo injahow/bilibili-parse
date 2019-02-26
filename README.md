@@ -9,4 +9,5 @@ av =“...”,
 p =“1/...”(默认1),
 q =“16/32/64/80/...”(默认64)
 
-
+## 项目测试
+https://api.injahow.cn/bparse/?av=42858217&p=1&q=80&otype=json
