@@ -29,11 +29,13 @@ exit;//结束所有脚本
 /*以下av编号解析*/
 $cid = getcid($av,$p);
 $api = getapi($cid,$q);
+
 if (json_decode(getjson($api))->code == 10004) {//判断为bangumi视频源
 $api = getapi_bangumi($cid,$q);
 }
+
 /*以下ep编号解析*/
-$msg = getjson($api);
+$msg = getjson($api,'http://bilibili.com');
 //echo $api;//测试视频api能否解析
 //echo $msg;//测试服务器实际解析
 $json = json_decode($msg);//json字符串对象化获取相关数据
@@ -50,17 +52,8 @@ $file = "./geturl/".$av.".json";
 writeurl($file ,$getjson);
 //echo $durl_0[0];
 function getcid($aid,$p) {//已知av获取cid
-  /*
-	$api = "http://api.bilibili.com/view?type=&appkey=84956560bc028eb7&id=".$aid."&page=".$p;
-    //echo $api;//测试能否获取cid
-	$json = getjson($api);
-	$result=array();
-	preg_match_all("/(?:cid)(.*)(?:partname)/i",$json, $result);//匹配cid大致字符串
-	$cid = $result[1][0];
-	$cid = substr($cid, 2, strlen($cid)-4);//加工截取得到cid
-  */
     $api = "https://api.bilibili.com/x/web-interface/view?aid=".$aid;
-    $json = getjson($api);
+    $json = getjson($api,'http://bilibili.com');
     $json = json_decode($json);
     $data = $json->data;
     $page = $data->pages[$p-1];
@@ -69,11 +62,21 @@ function getcid($aid,$p) {//已知av获取cid
 }
 function getapi($cid,$quality) {//核心代码————解析函数(cid编号，清晰度)
 	//$quality = "80";//数值表示清晰度(112|1080P+)/(80->1080P)/(64->720)/(32->480P)/(16->360P)//以最后返回为准，存在一定误差
-	$SEC1 = "94aba54af9065f71de72f5508f1cd42e";//特殊密钥
-	$api_url = "http://interface.bilibili.com/playurl?";//去v2清晰度最高480或(64->720)
-	$params_str = "appkey=84956560bc028eb7&cid=".$cid."&otype=json&qn=".$quality."&quality=".$quality."&type=flv";//otype可xml/type可mp4...
-	$sign = md5($params_str.$SEC1);
-	$api_url = $api_url.$params_str."&sign=".$sign;
+  /*************/
+    $entropy = "rbMCKn@KuamXWlPMoJGsKcbiJKUfkPF_8dABscJntvqhRSETg";
+    $entropy_array = str_split(strrev($entropy),1);
+    for ($i=0; $i < strlen($entropy) ; $i++) {
+        $a = chr(ord($entropy_array[$i])+2);
+        $str = $str.$a;
+    }
+	$appkey = explode(":",$str)[0];
+	$sec = explode(":",$str)[1];
+  /***************/
+	$api_url = "https://interface.bilibili.com/v2/playurl?";//去v2清晰度最高480或(64->720)
+	$params_str = "appkey=".$appkey."&cid=".$cid."&otype=json&qn=".$quality."&quality=".$quality."&type=";//otype可xml/type可mp4...
+	$chksum = md5($params_str.$sec);
+	$api_url = $api_url.$params_str."&sign=".$chksum; 
+    //echo $api_url;
     return $api_url;
 }
 function getapi_bangumi($cid,$quality) {//核心代码————解析函数(cid编号，清晰度)
@@ -86,19 +89,19 @@ function getapi_bangumi($cid,$quality) {//核心代码————解析函数(c
 	$api_url = $bangumi_api_url.$params_str."&sign=".$sign;
 	return $api_url;
 }
-function getjson($url) {
+function getjson($url,$referer) {
 	$curl = curl_init();//创建一个新的CURL资源
 	$headers = randIP();
-	curl_setopt($curl,CURLOPT_HTTPHEADER,$headers);//伪造请求ip
-	curl_setopt($curl,CURLOPT_REFERER,"http://bilibili.com");//伪造请求源referer
-	curl_setopt($curl,CURLOPT_URL,$url);//设置URL和相应的选项
-	curl_setopt($curl,CURLOPT_HEADER,0);//0表示不输出Header，1表示输出
-	curl_setopt($curl,CURLOPT_RETURNTRANSFER,1);//数据不输出到页面
-	curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,false);
-	curl_setopt($curl,CURLOPT_SSL_VERIFYHOST,false);
-	curl_setopt($curl,CURLOPT_ENCODING,'');//设置编码格式，为空表示支持所有格式的编码//header中“Accept-Encoding: ”部分的内容，支持的编码格式为："identity"，"deflate"，"gzip"
+	curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
+	curl_setopt($curl, CURLOPT_REFERER, $referer);//伪造请求源referer
+	curl_setopt($curl, CURLOPT_URL, $url);//设置URL和相应的选项
+	curl_setopt($curl, CURLOPT_HEADER, 0);//0表示不输出Header，1表示输出
+	curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);//数据不输出到页面
+	curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+	curl_setopt($curl, CURLOPT_ENCODING, '');//设置编码格式，为空表示支持所有格式的编码//header中“Accept-Encoding: ”部分的内容，支持的编码格式为："identity"，"deflate"，"gzip"
 	$UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.66 Safari/537.36";
-	curl_setopt($curl,CURLOPT_USERAGENT,$UserAgent);//模拟windows用户正常访问
+	curl_setopt($curl, CURLOPT_USERAGENT, $UserAgent);//模拟windows用户正常访问
 	$json = curl_exec($curl);
 	curl_close($curl);
 	return $json;
@@ -151,4 +154,3 @@ function query_array($query) {
 	return $params;
 }
 ?>
-
