@@ -58,7 +58,7 @@ function getcid($aid,$p) {//已知av获取cid
     $data = $json->data;
     $page = $data->pages[$p-1];
     $cid = $page->cid;
-	return $cid;
+    return $cid;
 }
 function getapi($cid,$quality) {//核心代码————解析函数(cid编号，清晰度)
 	//$quality = "80";//数值表示清晰度(112|1080P+)/(80->1080P)/(64->720)/(32->480P)/(16->360P)//以最后返回为准，存在一定误差
@@ -85,9 +85,9 @@ function getapi_bangumi($cid,$quality) {//核心代码————解析函数(c
     $SEC2 = "9b288147e5474dd2aa67085f716c560d";//特殊密钥
     $bangumi_api_url = "http://bangumi.bilibili.com/player/web_api/playurl?";
     $params_str = "cid=".$cid."&module=".$mod."&otype=json&player=1&quality=".$quality."&ts=".$ts;
-	$sign = md5($params_str.$SEC2);
-	$api_url = $bangumi_api_url.$params_str."&sign=".$sign;
-	return $api_url;
+    $sign = md5($params_str.$SEC2);
+    $api_url = $bangumi_api_url.$params_str."&sign=".$sign;
+    return $api_url;
 }
 function getjson($url,$referer) {
 	$curl = curl_init();//创建一个新的CURL资源
