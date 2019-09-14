@@ -1,3 +1,12 @@
+<?php include 'getapi.php';?>
+<?php
+if ($otype == 'json'){
+$file = "./geturl/".$av.".json";
+$msg_json = file_get_contents($file);//获取json文件
+echo $msg_json;
+}
+?>
+<?php if ($otype == 'dplayer'){ ?>
 <html>
 <head>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -35,9 +44,7 @@ margin-right: auto;
 </style>
 </head>
 <body>
-<?php
-include 'getapi.php';
-?>
+
 <div class="mainContainer">
 <video id="videoElement" class="centeredVideo" controls autoplay width="1024" height="576"></video>
 
@@ -84,3 +91,4 @@ include 'getapi.php';
 </script>
 </body>
 </html>
+<?php } ?>
