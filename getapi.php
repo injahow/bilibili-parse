@@ -9,7 +9,7 @@ if ($av=='') {
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;av 视频av号<br />
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p 视频集数<br />
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q 视频清晰度<br />
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;otype 输出格式<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;otype 输出格式<br /><br />
         此API基于you-get构建。<br /><br />
         例如：<a href="https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json" target="_blank">https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json</a><br />
         </body></html>';
