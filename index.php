@@ -7,7 +7,6 @@ echo $msg_json;
 }
 ?>
 
-
 <?php if ($otype == 'dplayer'){ ?>
 <html>
 <head>

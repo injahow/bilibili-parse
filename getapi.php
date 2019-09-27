@@ -19,13 +19,13 @@ if ($av=='') {
 }
 header("Content-Type: text/html; charset=UTF-8");//定义头文件，防止乱码
 if ($p == '') {
-    $q = "1";//默认720P    
+    $p = "1";//默认720P    
 }
 if ($q == '') {
     $q = "64";//默认第1页    
 }
 if ($otype == '') {
-    $q = "dplayer";//默认播放器
+    $otype = "dplayer";//默认播放器
 }
 //$av = $_COOKIE["av"];//"810872";//视频的av编号
 //$q = $_COOKIE["q"];//"16";//视频的清晰度编号
@@ -33,9 +33,11 @@ if ($otype == '') {
 $cid = getcid($av,$p);
 $api = getapi($cid,$q);
 
+/**此处出错
 if (json_decode(getjson($api))->code == 10004) {//判断为bangumi视频源
 $api = getapi_bangumi($cid,$q);
 }
+*/
 
 /*以下ep编号解析*/
 $msg = getjson($api,'http://bilibili.com');
