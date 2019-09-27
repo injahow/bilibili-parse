@@ -6,6 +6,8 @@ $msg_json = file_get_contents($file);//获取json文件
 echo $msg_json;
 }
 ?>
+
+
 <?php if ($otype == 'dplayer'){ ?>
 <html>
 <head>
@@ -44,10 +46,8 @@ margin-right: auto;
 </style>
 </head>
 <body>
-
 <div class="mainContainer">
 <video id="videoElement" class="centeredVideo" controls autoplay width="1024" height="576"></video>
-
 </div>
 <br>
 <div class="controls">
@@ -58,7 +58,6 @@ margin-right: auto;
 <input style="width:100px" type="text" name="seekpoint" />
 <button onclick="flv_seekto()">跳转</button>
 </div>
-
 <script src="./flv.min.js"></script>
 <script>
       var player = document.getElementById('videoElement');
