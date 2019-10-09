@@ -13,7 +13,7 @@ if ($av=='') {
         此API基于you-get构建。<br /><br />
         例如：<a href="https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json" target="_blank">https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json</a><br />
         </body></html>';
-    exit;//结束所有脚本
+    exit();//结束所有脚本
 } else {
     setcookie("av",$av);
 }
@@ -30,35 +30,34 @@ if ($otype == '') {
 //$av = $_COOKIE["av"];//"810872";//视频的av编号
 //$q = $_COOKIE["q"];//"16";//视频的清晰度编号
 /*以下av编号解析*/
-$cid = getcid($av,$p);
-$api = getapi($cid,$q);
+$cid = get_cid($av,$p);
+$api = get_api($cid,$q);
 
 /**此处出错
-if (json_decode(getjson($api))->code == 10004) {//判断为bangumi视频源
-$api = getapi_bangumi($cid,$q);
+if (json_decode(get_json($api))->code == 10004) {//判断为bangumi视频源
+$api = get_api_bangumi($cid,$q);
 }
 */
 
 /*以下ep编号解析*/
-$msg = getjson($api,'http://bilibili.com');
+$msg = get_json($api,'http://bilibili.com');
 //echo $api;//测试视频api能否解析
 //echo $msg;//测试服务器实际解析
 $json = json_decode($msg);//json字符串对象化获取相关数据
-$durl_0 = $json->durl[0];
 $q = $json->quality;
 /*下略补充*/
-$url = $durl_0->url;
+$url = $json->durl[0]->url;
 //$url = str_replace('http','https',$url);//修改为https
 /*下略补充*/
 $durl_json = array('url'=>$url);
-$getjson = array('aid'=>$av,'page'=>$p,'quality'=>$q,'durl'=>[$durl_json],'status'=>'ok');//json初始化
-$getjson = json_encode($getjson);//php数组json字符串化
+$get_json = array('aid'=>$av,'page'=>$p,'quality'=>$q,'durl'=>[$durl_json],'status'=>'ok');//json初始化
+$get_json = json_encode($get_json);//php数组json字符串化
 $file = "./geturl/".$av.".json";
-writeurl($file ,$getjson);
+write_url($file, $get_json);
 //echo $durl_0[0];
-function getcid($aid,$p) {//已知av获取cid
+function get_cid($aid,$p) {//已知av获取cid
     $api = "https://api.bilibili.com/x/web-interface/view?aid=".$aid;
-    $json = getjson($api,'http://bilibili.com');
+    $json = get_json($api,'http://bilibili.com');
     $json = json_decode($json);
     $data = $json->data;
     $page = $data->pages[$p-1];
@@ -66,7 +65,7 @@ function getcid($aid,$p) {//已知av获取cid
     return $cid;
 }
 
-function getapi($cid,$quality) {//核心代码————解析函数(cid编号，清晰度)
+function get_api($cid,$quality) {//核心代码————解析函数(cid编号，清晰度)
 	//$quality-清晰度(112|1080P+)/(80->1080P)/(64->720)/(32->480P)/(16->360P)//以最后返回为准，存在一定误差
     /*************/
     $entropy = "rbMCKn@KuamXWlPMoJGsKcbiJKUfkPF_8dABscJntvqhRSETg";
@@ -74,7 +73,7 @@ function getapi($cid,$quality) {//核心代码————解析函数(cid编号
     $str='';
     for ($i=0; $i < strlen($entropy) ; $i++) {
         $a = chr(ord($entropy_array[$i])+2);
-        $str = $str.$a;
+        $str .= $a;
     }
 	$appkey = explode(":",$str)[0];
 	$sec = explode(":",$str)[1];
@@ -87,18 +86,18 @@ function getapi($cid,$quality) {//核心代码————解析函数(cid编号
     return $api_url;
 }
 
-function getapi_bangumi($cid,$quality) {//(待修正),核心代码————解析函数(cid编号，清晰度)
+function get_api_bangumi($cid,$quality) {//(待修正),核心代码————解析函数(cid编号，清晰度)
     $ts = time();//获取当前时间戳
     $mod = "bangumi";//$mod = "movie";
-    $SEC2 = "9b288147e5474dd2aa67085f716c560d";//特殊密钥
+    $sec2 = "9b288147e5474dd2aa67085f716c560d";//特殊密钥
     $bangumi_api_url = "http://bangumi.bilibili.com/player/web_api/playurl?";
     $params_str = "cid=".$cid."&module=".$mod."&otype=json&player=1&quality=".$quality."&ts=".$ts;
-    $sign = md5($params_str.$SEC2);
+    $sign = md5($params_str.$sec2);
     $api_url = $bangumi_api_url.$params_str."&sign=".$sign;
     return $api_url;
 }
 
-function getjson($url,$referer) {
+function get_json($url,$referer) {
 	$curl = curl_init();//创建一个新的CURL资源
 	$headers = rand_headers();
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
@@ -113,19 +112,15 @@ function getjson($url,$referer) {
 	return $json;
 }
 
-function writeurl($TxtFileName,$str) {
-	if(($TxtRes=fopen($TxtFileName,"w+")) === FALSE){//读写打开，不存则创建
-	//创建失败
+function write_url($txt_file_name,$str) {
+	if (!($txt_res=fopen($txt_file_name,"w+"))) {//读写打开，不存在则创建
 	exit();
 	}
-	//创建成功
-	if(!fwrite($TxtRes,$str)) {//写入
-	//写失败
-	fclose($TxtRes);
+	if (!fwrite($txt_res,$str)) {//写入
+	fclose($txt_res);
 	exit();
 	}
-	//写成功
-	fclose($TxtRes);//关闭指针
+	fclose($txt_res);//关闭指针
 }
 
 function rand_headers(){//随机ip
@@ -145,11 +140,10 @@ function rand_headers(){//随机ip
 	$ip= long2ip(mt_rand($ip_long[$rand_key][0], $ip_long[$rand_key][1]));
 	$headers['CLIENT-IP'] = $ip;
 	$headers['X-FORWARDED-FOR'] = $ip;
-	$headerArr = array();
-	foreach( $headers as $n => $v ) {
-		$headerArr[] = $n .':' . $v;
+	$header_arr = array();
+	foreach ($headers as $n => $v) {
+		$header_arr[] = $n .':' . $v;
 	}
-    return $headerArr;
-
+    return $header_arr;
 }
 ?>
