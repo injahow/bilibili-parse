@@ -47,7 +47,11 @@ $json = json_decode($msg);//json字符串对象化获取相关数据
 $q = $json->quality;
 /*下略补充*/
 $url = $json->durl[0]->url;
-//$url = strtr($url, 'http', 'https');//修改为https
+/*
+if ($m_url[4] != 's') {//改https
+	$url = strtr($url, 'http', 'https');//修改为https
+}*/
+
 /*下略补充*/
 $durl_json = array('url'=>$url);
 $get_json = array('aid'=>$av,'page'=>$p,'quality'=>$q,'durl'=>[$durl_json],'status'=>'ok');//json初始化
