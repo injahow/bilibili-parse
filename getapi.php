@@ -13,7 +13,7 @@ if ($av=='') {
         此API基于you-get构建。<br /><br />
         例如：<a href="https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json" target="_blank">https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json</a><br />
         </body></html>';
-    exit();//结束所有脚本
+    exit;//结束所有脚本
 } else {
     setcookie('av',$av);
 }
@@ -112,11 +112,11 @@ function get_json($url,$referer) {
 
 function write_url($txt_file_name,$str) {
 	if (!($txt_res=fopen($txt_file_name,'w+'))) {//读写打开，不存在则创建
-		exit();
+		exit;
 	}
 	if (!fwrite($txt_res,$str)) {//写入
 		fclose($txt_res);
-		exit();
+		exit;
 	}
 	fclose($txt_res);//关闭指针
 }
