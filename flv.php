@@ -3,25 +3,22 @@
 $av =  $_COOKIE["av"];
 $file = "./geturl/".$av.".json";
 if(file_exists($file)){
-$msg = file_get_contents($file);//使用file_get_contents函数获取url
-$json = json_decode($msg);//json字符串对象化
+    $msg = file_get_contents($file);//使用file_get_contents函数获取url
+    $json = json_decode($msg);//json字符串对象化
+    $flvurl = $json->durl[0]->url;
 
-$durl_0 = $json->durl[0];
-$flvurl = $durl_0->url;
+    $curl = curl_init();//创建一个新的CURL资源
+    $headers = rand_headers();
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
+    $ua="Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.66 Safari/537.36";
+    curl_setopt($curl, CURLOPT_USERAGENT, $ua);//模拟windows用户正常访问
+    curl_setopt($curl, CURLOPT_REFERER, "http://bilibili.com");//伪造请求源referer
+    curl_setopt($curl, CURLOPT_URL, $flvurl);//设置URL和相应的选项
+    curl_setopt($curl, CURLOPT_HEADER, 0);//0表示不输出Header，1表示输出
+    //curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
-$curl = curl_init();//创建一个新的CURL资源
-$headers = rand_headers();
-curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
-$ua="Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.66 Safari/537.36";
-curl_setopt($curl, CURLOPT_USERAGENT, $ua);//模拟windows用户正常访问
-curl_setopt($curl, CURLOPT_REFERER, "http://bilibili.com");//伪造请求源referer
-curl_setopt($curl, CURLOPT_URL, $flvurl);//设置URL和相应的选项
-curl_setopt($curl, CURLOPT_HEADER, 0);//0表示不输出Header，1表示输出
-//curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-
-curl_exec($curl);//flv与php同化，数据直接输出到页面
-curl_close($curl);
-
+    curl_exec($curl);//flv与php同化，数据直接输出到页面
+    curl_close($curl);
 }
 
 function rand_headers(){
