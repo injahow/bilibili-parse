@@ -1,91 +1,52 @@
 <?php include 'getapi.php';?>
 <?php
 if ($otype == 'json'){
+header('Content-type: application/json; charset=UTF-8;');//定义json头
 $file = "./geturl/".$av.".json";
 $msg_json = file_get_contents($file);//获取json文件
 echo $msg_json;
 }
 ?>
-
-<?php if ($otype == 'player'){ ?>
+<?php if ($otype == 'dplayer'){ ?>
 <html>
 <head>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
 <title>B-flv解析</title>
-<style>
-.mainContainer {
-display: block;
-width: 1024px;
-margin-left: auto;
-margin-right: auto;
-}
-.urlInput {
-display: block;
-width: 100%;
-margin-left: auto;
-margin-right: auto;
-margin-top: 8px;
-margin-bottom: 8px;
-}
-.centeredVideo {
-display: block;
-width: 100%;
-height: 576px;
-margin-left: auto;
-margin-right: auto;
-margin-bottom: auto;
-}
-.controls {
-display: block;
-width: 100%;
-text-align: left;
-margin-left: auto;
-margin-right: auto;
-}
-</style>
 </head>
 <body>
-<div class="mainContainer">
-<video id="videoElement" class="centeredVideo" controls autoplay width="1024" height="576"></video>
-</div>
-<br>
-<div class="controls">
-<!--<button onclick="flv_load()">加载</button>-->
-<button onclick="flv_start()">开始</button>
-<button onclick="flv_pause()">暂停</button>
-<button onclick="flv_destroy()">停止</button>
-<input style="width:100px" type="text" name="seekpoint" />
-<button onclick="flv_seekto()">跳转</button>
-</div>
 <script src="./flv.min.js"></script>
+<link rel="stylesheet" href="./DPlayer.min.css">
+<script type="text/javascript" src="./DPlayer.min.js" charset="utf-8"></script>
+<div id="player1"></div>
+
 <script>
-      var player = document.getElementById('videoElement');
-	  if (flvjs.isSupported()) {
-         var flvPlayer = flvjs.createPlayer({type: 'flv',//此处可添加设置
-        url: 'flv.php',//<==自行修改
-            }, {
-		lazyLoadMaxDuration: 15 * 60 //前面数值对应单位缓存差18s//此处具体参数可以通过获得的视频具体时长计算
-			});
-            flvPlayer.attachMediaElement(videoElement);
-            flvPlayer.load(); //加载
-            flv_start();
-        }
-		function flv_start() {
-            player.play();
-        }
-		function flv_pause() {
-            player.pause();
-        }
-		function flv_destroy() {
-            player.pause();
-            player.unload();
-            player.detachMediaElement();
-            player.destroy();
-            player = null;
-        }
-		function flv_seekto() {
-            player.currentTime = parseFloat(document.getElementsByName('seekpoint')[0].value);
-        }
+//这里必须使用 customType--自定义类型
+const dp = new DPlayer({
+    container: document.getElementById('player1'),
+    video: {
+        url: 'flv.php',
+        type: 'customFlv',
+        customType: {
+            customFlv: function(video, player) {
+                const flvPlayer = flvjs.createPlayer({
+                    type: 'flv',
+                    url: video.src,
+                });
+                flvPlayer.attachMediaElement(video);
+                flvPlayer.load();
+            },
+        },
+    },
+     //danmaku: {//可选，显示弹幕，忽略此选项以隐藏弹幕
+      //id: '9E2E3368B56CDBB4',//必需，弹幕id，注意：它必须是唯一的，不能在你的新播放器中使用这些：`https://api.prprpr.me/dplayer/list`
+     //   api: 'https://api.prprpr.me/dplayer/',//必需，弹幕api接口'https://api.bilibili.com/x/v1/dm/???https://api.injahow.cn/danmu/??https://injahow.cn/danmu/
+       // token: 'tokendemo',//可选，api 的弹幕令牌
+      //  maximum: 1000,//可选，最大数量的弹幕
+        //addition: ['https://api.prprpr.me/dplayer/bilibili?aid=4157142']//可选的，额外的弹幕，参见：`Bilibili弹幕支持`https://api.bilibili.com/x/v1/dm/list.so?oid=63968441
+    //}//
+});
+
+
 </script>
 </body>
 </html>
