@@ -3,7 +3,7 @@ $av = $_GET['av'];
 $q = $_GET['q'];
 $p = $_GET['p'];
 $otype = $_GET['otype'];
-if ($av=='') {
+if ($av == '') {
     echo '<!DOCTYPE HTML><html><meta http-equiv="Content-Type" content="text/html;charset=utf-8"/><head><link rel="shortcut icon" href="favicon.png"><title>b-video</title></head><body><h1>参数说明</h1>
         type: 类型<br />
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;av 视频av号<br />
@@ -15,8 +15,9 @@ if ($av=='') {
         </body></html>';
     exit;//结束所有脚本
 } else {
-    setcookie('av',$av);
+    setcookie('av', $av);
 }
+
 header('Content-Type: text/html; charset=UTF-8');//定义头文件，防止乱码
 if ($p == '') {
     $p = '1';//默认第1页
@@ -26,7 +27,7 @@ if ($q == '') {
 }
 /*
 if ($otype == '') {
-    $otype = 'dplayer';//默认播放器
+    $otype = 'dplayer';
 }*/
 //$av = $_COOKIE['av'];//'810872';//视频的av编号
 //$q = $_COOKIE['q'];//'16';//视频的清晰度编号
@@ -41,7 +42,7 @@ $api = get_api_bangumi($cid,$q);
 */
 
 /*以下ep编号解析*/
-$msg = get_json($api,'http://bilibili.com');
+$msg = get_json($api, 'http://bilibili.com');
 //echo $api;//测试视频api能否解析
 //echo $msg;//测试服务器实际解析
 $json = json_decode($msg);//json字符串对象化获取相关数据
@@ -54,28 +55,35 @@ if ($m_url[4] != 's') {//改https
 }*/
 
 /*下略补充*/
-$durl_json = array('url'=>$url);
-$get_json = array('aid'=>$av,'page'=>$p,'quality'=>$q,'durl'=>[$durl_json],'status'=>'ok');//json初始化
+$durl_json = array('url' => $url);
+$get_json = array(
+	'aid' => $av,
+	'page' => $p,
+	'quality' => $q,
+	'durl' => [$durl_json],
+	'status' => 'ok'
+);//json初始化
 $get_json = json_encode($get_json);//php数组json字符串化
 $file = './geturl/'.$av.'.json';
 write_url($file, $get_json);
 //echo $durl_0[0];
-function get_cid($aid,$p) {//已知av获取cid
-    return json_decode(get_json('https://api.bilibili.com/x/web-interface/view?aid='.$aid,'http://bilibili.com'))->data->pages[$p-1]->cid;
+function get_cid($aid, $p) {//已知av获取cid
+    return json_decode(get_json('https://api.bilibili.com/x/web-interface/view?aid='.$aid, 'http://bilibili.com'))->data->pages[$p-1]->cid;
 }
 
-function get_api($cid,$quality) {//核心代码————解析函数(cid编号，清晰度)
-	//$quality-清晰度(112|1080P+)/(80->1080P)/(64->720)/(32->480P)/(16->360P)//以最后返回为准，存在一定误差
+function get_api($cid, $quality) {//核心代码————解析函数(cid编号，清晰度)
+	//$quality-清晰度(112|1080P+)/(80->1080P)/(64->720)/(32->480P)/(16->360P)
+	//以最后返回为准，存在一定误差
     /*************/
     $entropy = 'rbMCKn@KuamXWlPMoJGsKcbiJKUfkPF_8dABscJntvqhRSETg';
-    $entropy_array = str_split(strrev($entropy),1);
-    $str='';
+    $entropy_array = str_split(strrev($entropy), 1);
+    $str = '';
     for ($i=0; $i < strlen($entropy); ++$i) {
-        $a = chr(ord($entropy_array[$i])+2);
+        $a = chr(ord($entropy_array[$i]) + 2);
         $str .= $a;
     }
-	$appkey = explode(':',$str)[0];
-	$sec = explode(':',$str)[1];
+	$appkey = explode(':', $str)[0];
+	$sec = explode(':', $str)[1];
     /***************/
 	$api_url = 'https://interface.bilibili.com/v2/playurl?';//去v2清晰度最高480或(64->720)
 	$params_str = 'appkey='.$appkey.'&cid='.$cid.'&otype=json&qn='.$quality.'&quality='.$quality.'&type=';//otype可xml/type可mp4...
@@ -85,7 +93,7 @@ function get_api($cid,$quality) {//核心代码————解析函数(cid编�
     return $api_url;
 }
 
-function get_api_bangumi($cid,$quality) {//(待修正)————番剧解析函数(cid编号，清晰度)
+function get_api_bangumi($cid, $quality) {//(待修正)————番剧解析函数(cid编号，清晰度)
     $ts = time();//获取当前时间戳
     $mod = 'bangumi';//$mod = 'movie';
     $sec2 = '9b288147e5474dd2aa67085f716c560d';//特殊密钥
@@ -96,7 +104,7 @@ function get_api_bangumi($cid,$quality) {//(待修正)————番剧解析�
     return $api_url;
 }
 
-function get_json($url,$referer) {
+function get_json($url, $referer) {
 	$curl = curl_init();//创建一个新的CURL资源
 	$headers = rand_headers();
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);//伪造请求ip
@@ -111,11 +119,11 @@ function get_json($url,$referer) {
 	return $json;
 }
 
-function write_url($txt_file_name,$str) {
-	if (!($txt_res=fopen($txt_file_name,'w+'))) {//读写打开，不存在则创建
+function write_url($txt_file_name, $str) {
+	if (!($txt_res = fopen($txt_file_name, 'w+'))) {//读写打开，不存在则创建
 		exit;
 	}
-	if (!fwrite($txt_res,$str)) {//写入
+	if (!fwrite($txt_res, $str)) {//写入
 		fclose($txt_res);
 		exit;
 	}
