@@ -3,7 +3,7 @@
 $av =  $_COOKIE["av"];
 $file = "./geturl/".$av.".json";
 if(file_exists($file)){
-    $msg = file_get_contents($file);//使用file_get_contents函数获取url
+    $msg = file_get_contents($file);//获取内容
     $json = json_decode($msg);//json字符串对象化
     $flvurl = $json->durl[0]->url;
 
