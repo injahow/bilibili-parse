@@ -1,17 +1,17 @@
 # bilibili-parse
-B站flv视频源解析地址
 
-使用前请确认php开启了curl扩展
+B 站 flv 视频源解析地址
+使用前请确认 php 开启了 curl 扩展
 
 ## 使用说明
 
-| 参数名| 含义| 默认| 可选|
-| :----: | :----: | :----: | :----: |
-| av | 视频编号 |     | - |
-| p  | 视频集数 | 1 | >=1 |
-| q  | 视频清晰度 | 64 | 16/32/64 |
-| otype  | 输出格式 |     | dplayer/json |
+| 参数名 |    含义    | 默认 |     可选     |
+| :----: | :--------: | :--: | :----------: |
+|   av   |  视频编号  |      |      -       |
+|   p    |  视频集数  |  1   |     >=1      |
+|   q    | 视频清晰度 |  64  |   16/32/64   |
+| otype  |  输出格式  |      | dplayer/json |
 
 ## 项目测试
 
-https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json
+[https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json](https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=json)
