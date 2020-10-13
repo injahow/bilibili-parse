@@ -8,12 +8,14 @@ if ($otype == 'json') {
     exit;
 }
 ?>
+
 <?php if ($otype == 'dplayer') { ?>
+    <!-- 仅用于开发测试环境 -->
     <html>
 
     <head>
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>B-flv解析</title>
+        <title>bilibili-parse播放测试</title>
     </head>
 
     <body>
