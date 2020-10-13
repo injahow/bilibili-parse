@@ -1,51 +1,34 @@
-<?php include 'getapi.php'; ?>
 <?php
-if ($otype == 'json') {
-    header('Content-type: application/json; charset=UTF-8;');
-    $file = './geturl/' . $av . '.json';
-    $msg_json = file_get_contents($file);
-    echo $msg_json;
+
+require 'src/Bilibili.php';
+
+use Injahow\Bilibili;
+
+$api = new Bilibili('video');
+
+$api->cache(true);
+
+$av = isset($_GET['av']) ? $_GET['av'] : '';
+if ($av == '') {
+    require './public/welcome.html';
     exit;
 }
-?>
+$api->aid($av);
 
-<?php if ($otype == 'dplayer') { ?>
-    <!-- 仅用于开发测试环境 -->
-    <html>
+$p = isset($_GET['p']) ? $_GET['p'] : 1;
+$api->page(intval($p));
 
-    <head>
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>bilibili-parse播放测试</title>
-    </head>
+$q = isset($_GET['q']) ? $_GET['q'] : 32;
+$api->quality(intval($q));
 
-    <body>
-        <div id="dplayer1"></div>
-    </body>
+$otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
 
-    <link rel="stylesheet" href="./DPlayer.min.css">
-    <script src="./flv.min.js"></script>
-    <script type="text/javascript" src="./DPlayer.min.js" charset="utf-8"></script>
-    <script>
-        //这里必须使用 customType 自定义类型
-        const dp = new DPlayer({
-            container: document.getElementById('dplayer1'),
-            video: {
-                url: 'flv.php',
-                type: 'customFlv',
-                customType: {
-                    customFlv: function(video, player) {
-                        const flvPlayer = flvjs.createPlayer({
-                            type: 'flv',
-                            url: video.src,
-                        });
-                        flvPlayer.attachMediaElement(video);
-                        flvPlayer.load();
-                    },
-                },
-            }
-        });
-    </script>
-
-    </html>
-<?php exit;
-} ?>
+if ($otype == 'dplayer') {
+    // ! 测试用
+    require './public/dplayer.html';
+    exit;
+} else if ($otype == 'json') {
+    echo $api->video();
+} else if ($otype == 'url') {
+    echo json_encode($api->url());
+}
