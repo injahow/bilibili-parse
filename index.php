@@ -1,34 +1,42 @@
 <?php
+$av = isset($_GET['av']) ? $_GET['av'] : '';
+$otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
 
-require 'src/Bilibili.php';
+if ($av == '') {
+    include './public/welcome.html';
+    exit;
+}
+
+// ! 测试用
+if ($otype == 'dplayer') {
+    include './public/dplayer.html';
+    exit;
+}
+
+$p = isset($_GET['p']) ? $_GET['p'] : 1;
+$q = isset($_GET['q']) ? $_GET['q'] : 32;
+
+include 'src/Bilibili.php';
 
 use Injahow\Bilibili;
 
-$api = new Bilibili('video');
+$video = new Bilibili('video');
 
-$api->cache(true);
+// 缓存 1h
+$video->cache(true);
+$video->cache_time(3600);
 
-$av = isset($_GET['av']) ? $_GET['av'] : '';
-if ($av == '') {
-    require './public/welcome.html';
-    exit;
-}
-$api->aid($av);
+$video->aid($av);
+$video->page(intval($p));
+$video->quality(intval($q));
 
-$p = isset($_GET['p']) ? $_GET['p'] : 1;
-$api->page(intval($p));
+if ($otype == 'json') {
+    header('Content-type: application/json; charset=utf-8;');
+    // 允许跨站
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET');
 
-$q = isset($_GET['q']) ? $_GET['q'] : 32;
-$api->quality(intval($q));
-
-$otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
-
-if ($otype == 'dplayer') {
-    // ! 测试用
-    require './public/dplayer.html';
-    exit;
-} else if ($otype == 'json') {
-    echo $api->video();
+    echo json_encode(json_decode($video->video())[0]);
 } else if ($otype == 'url') {
-    echo json_encode($api->url());
+    echo $video->url();
 }

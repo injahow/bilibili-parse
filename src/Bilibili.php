@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.1
+ * Version 0.1.1
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -21,6 +21,8 @@ class Bilibili
     public $type;
 
     public $cache = false;
+    public $cache_time = 3600;
+
     public $proxy = null;
     public $data;
     public $raw;
@@ -84,6 +86,14 @@ class Bilibili
         return $this;
     }
 
+    public function cache_time($value = 3600)
+    {
+        // min 60s
+        $this->cache_time = $value > 60 ? $value : 60;
+
+        return $this;
+    }
+
     public function proxy($value)
     {
         $this->proxy = $value;
@@ -96,7 +106,8 @@ class Bilibili
      */
     public function getCacheFileName()
     {
-        return './temp/cid/' . $this->cid . '_' . $this->quality . '.json';
+        // ! mkdir './cache/cid/'
+        return './cache/cid/' . $this->cid . '_' . $this->quality . '.json';
     }
 
     public function video()
@@ -106,15 +117,13 @@ class Bilibili
 
         $file_name = $this->getCacheFileName();
         if ($this->cache && file_exists($file_name)) {
-            // 1h reset
-            if (time() - filectime($file_name) <= 60 * 60) {
+            if (time() - filectime($file_name) < $this->cache_time) {
                 return $this->getCache();
             }
         }
 
         $this->setAppkey();
         $params_str = 'appkey=' . $this->appkey . '&cid=' . $this->cid . '&otype=json&qn=' . strval($this->quality) . '&quality=' . strval($this->quality) . '&type=';
-
         $api = array(
             'method' => 'GET',
             'url'    => 'https://interface.bilibili.com/v2/playurl',
@@ -132,7 +141,7 @@ class Bilibili
         $data = $this->exec($api);
 
         if ($this->cache) {
-            // 更新quality参数，避免错误cache
+            // 更新quality参数，避免保存冗余cache
             $this->quality(json_decode($data, true)[0]['quality']);
             $this->setCache($data);
         }
@@ -170,8 +179,7 @@ class Bilibili
 
     public function setCache($str)
     {
-        $file_name = $this->getCacheFileName();
-        if (!($res = fopen($file_name, 'w+'))) {
+        if (!($res = fopen($this->getCacheFileName(), 'w+'))) {
             exit;
         }
         if (!fwrite($res, $str)) {
