@@ -1,5 +1,5 @@
 <?php
-//!仅用于开发测试
+// ! 仅用于开发测试
 $av = isset($_GET['av']) ? $_GET['av'] : '';
 if ($av == '') exit;
 
@@ -20,4 +20,5 @@ $video->aid($av);
 $video->page(intval($p));
 $video->quality(intval($q));
 
+// header('Content-type: application/octet-stream;');
 $video->flv();

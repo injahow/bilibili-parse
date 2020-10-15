@@ -30,13 +30,14 @@ $video->aid($av);
 $video->page(intval($p));
 $video->quality(intval($q));
 
+// 允许跨站
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET');
+
 if ($otype == 'json') {
     header('Content-type: application/json; charset=utf-8;');
-    // 允许跨站
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET');
-
     echo json_encode(json_decode($video->video())[0]);
 } else if ($otype == 'url') {
+    header('Content-type: text/plain; charset=utf-8;');
     echo $video->url();
 }
