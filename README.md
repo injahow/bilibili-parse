@@ -19,6 +19,10 @@
 - [https://api.injahow.cn/bparse/?av=14661594&p=2&q=32&otype=url](https://api.injahow.cn/bparse/?av=14661594&p=2&q=32&otype=url)
 - [https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=dplayer](https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=dplayer)
 
+## Tools
+
+- [bilibili-parse-download.user.js](https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js)
+
 ## Requirement
 
 PHP 5.4+ and Curl, OpenSSL extension installed.
