@@ -3,20 +3,20 @@ $av = isset($_GET['av']) ? $_GET['av'] : '';
 $otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
 
 if ($av == '') {
-    include './public/welcome.html';
+    include __DIR__ . './public/welcome.html';
     exit;
 }
 
 // ! 测试用
 if ($otype == 'dplayer') {
-    include './public/dplayer.html';
+    include __DIR__ . './public/dplayer.html';
     exit;
 }
 
 $p = isset($_GET['p']) ? $_GET['p'] : 1;
 $q = isset($_GET['q']) ? $_GET['q'] : 32;
 
-include 'src/Bilibili.php';
+include __DIR__ . 'src/Bilibili.php';
 
 use Injahow\Bilibili;
 
