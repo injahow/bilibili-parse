@@ -117,7 +117,7 @@ class Bilibili
 
         $file_name = $this->getCacheFileName();
         if ($this->cache && file_exists($file_name)) {
-            if (time() - filectime($file_name) < $this->cache_time) {
+            if ($_SERVER['REQUEST_TIME'] - filectime($file_name) < $this->cache_time) {
                 return $this->getCache();
             }
         }
