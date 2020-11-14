@@ -3,13 +3,13 @@ $av = isset($_GET['av']) ? $_GET['av'] : '';
 $otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
 
 if ($av == '') {
-    include __DIR__ . './public/welcome.html';
+    include __DIR__ . '/public/welcome.html';
     exit;
 }
 
 // ! 测试用
 if ($otype == 'dplayer') {
-    include __DIR__ . './public/dplayer.html';
+    include __DIR__ . '/public/dplayer.html';
     exit;
 }
 
