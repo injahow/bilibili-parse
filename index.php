@@ -16,7 +16,7 @@ if ($otype == 'dplayer') {
 $p = isset($_GET['p']) ? $_GET['p'] : 1;
 $q = isset($_GET['q']) ? $_GET['q'] : 32;
 
-include __DIR__ . 'src/Bilibili.php';
+include __DIR__ . '/src/Bilibili.php';
 
 use Injahow\Bilibili;
 
