@@ -68,7 +68,7 @@
       dataType: 'text',
       success: function (result) {
         console.log('url获取成功')
-        video_url.attr('href', result)
+        video_url.attr('href', result.replace(/^https?\:\/\//i,'https://'))
         video_url.show()
       }
     })
