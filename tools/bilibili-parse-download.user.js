@@ -2,7 +2,7 @@
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
 // @version      0.1.2
-// @description  目前仅支持flv视频，使用a标签绕过防盗链，但ip受限，api接口见https://github.com/injahow/bilibili-parse
+// @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/*
 // @license      MIT
