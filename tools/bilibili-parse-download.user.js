@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    let aid = '', p = '', q='', cid = window.cid;
+    let aid = '', epid='', p = '', q='', cid = window.cid;
     let aid_temp = '', p_temp = '', q_temp = '';
     const topBox =
           "<div style='position:fixed;z-index:999999;cursor:pointer;top:60px;left:0px;'>"+
@@ -71,7 +71,8 @@
         let local_host = window.location.href;
         if(local_host.match(/bilibili.com\/bangumi\/play\/ep/)){
             type = 'bangumi';
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${window.ep.id}&q=${q}&otype=url&type=${type}`;
+            epid = local_host.match(/\d+/g)[0];
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
         }else if(local_host.match(/bilibili.com\/video\/av/)){
             type = 'video';
             api_url =`https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}`;
