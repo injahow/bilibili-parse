@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.1.7
+// @version      0.1.8
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
-// @match        *://www.bilibili.com/video/*
+// @match        *://www.bilibili.com/video/av*
+// @match        *://www.bilibili.com/bangumi/play/ep*
 // @license      MIT
 // @grant        none
 // @require      https://static.hdslb.com/js/jquery.min.js
@@ -66,9 +67,18 @@
         q_temp = q;
 
         console.log('开始解析');
+        let type, api_url;
+        let local_host = window.location.href;
+        if(local_host.match(/bilibili.com\/bangumi\/play\/ep/)){
+            type = 'bangumi';
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${window.ep.id}&q=${q}&otype=url&type=${type}`;
+        }else if(local_host.match(/bilibili.com\/video\/av/)){
+            type = 'video';
+            api_url =`https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}`;
+        }
         $.ajax({
-            url:`https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url`,
-            dataType:'text',
+            url: api_url,
+            dataType: 'text',
             success:function(result){
                 console.log('url获取成功');
                 video_url.attr('href', result.replace(/^https?\:\/\//i,'https://'));
