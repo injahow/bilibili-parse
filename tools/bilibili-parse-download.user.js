@@ -6,6 +6,7 @@
 // @author       injahow
 // @match        *://www.bilibili.com/video/*
 // @match        *://www.bilibili.com/bangumi/play/ep*
+// @match        *://www.bilibili.com/bangumi/play/ss*
 // @license      MIT
 // @grant        none
 // @require      https://static.hdslb.com/js/jquery.min.js
@@ -73,6 +74,10 @@
             type = 'bangumi';
             epid = local_host.match(/\d+/g)[0];
             api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
+        }else if(local_host.match(/bilibili.com\/bangumi\/play\/ss/)){
+            type = 'bangumi';
+            epid = window.__INITIAL_STATE__.epInfo.id;
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
         }else if(local_host.match(/bilibili.com\/video\//)){
             type = 'video';
             api_url =`https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}`;
@@ -81,9 +86,14 @@
             url: api_url,
             dataType: 'text',
             success:function(result){
-                console.log('url获取成功');
-                video_url.attr('href', result.replace(/^https?\:\/\//i,'https://'));
-                video_url.show();
+                if(result !== ''){
+                    console.log('url获取成功');
+                    video_url.attr('href', result.replace(/^https?\:\/\//i,'https://'));
+                    video_url.show();
+                }else{
+                    console.log('url获取失败');
+                }
+
             }
         });
     });
