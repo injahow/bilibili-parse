@@ -13,7 +13,7 @@
 |   p    |  视频集数  |  1   |       >=1        |
 |   q    | 视频清晰度 |  32  |   16/32/64/80    |
 | otype  |  输出格式  | json | json/url/dplayer |
-|  type  |  视频格式  | video|   video/bangumi  |
+|  type  |  视频类型  | video|   video/bangumi  |
 
 
 ## Demo
