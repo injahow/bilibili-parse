@@ -178,7 +178,7 @@ class Bilibili
 
     public function bilibili_bangumi_api()
     {
-        $this->setCid();
+        //$this->setCid(); // how to set cid ?
         return array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/pgc/player/web/playurl',
