@@ -5,6 +5,7 @@
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
+// @match        *://www.bilibili.com/video/BV*
 // @match        *://www.bilibili.com/bangumi/play/ep*
 // @license      MIT
 // @grant        none
