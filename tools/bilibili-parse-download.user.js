@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.1.8
+// @version      0.1.9
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/*
@@ -25,6 +25,11 @@
           "</div>"+
           "</div>";
     $('body').append(topBox);
+    // 引用外链播放器
+    $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
+    $('body').append('<script src="https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js"></script>');
+    $('body').append('<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>');
+
     const video_url = $('#video_url');
 
     $('body').on('click','#bilibili_parse',function(){
@@ -44,10 +49,6 @@
             }
         }
 
-        // 获取视频分辨率参数q
-        q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
-        q = q || '64';
-
         // 获取视频分页参数p
         let query_arr = window.location.search.substring(1).split('&');
         for (let i=0; i<query_arr.length; i++) {
@@ -57,6 +58,16 @@
             }
         }
         p = p || '1';
+
+        // 获取视频分辨率参数q
+        q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
+        q = q || '32';
+        if(!window.__BiliUser__.isLogin){
+            let q_max = $('.bui-select-item')[0].dataset.value || q;
+            q = q_max > 80 ? 80 : q_max;
+            // 暂停视频准备换源
+            $('video[crossorigin="anonymous"]')[0].pause();
+        }
 
         if (aid === aid_temp && p === p_temp && q === q_temp){
             console.log('重复请求');
@@ -90,38 +101,67 @@
                     console.log('url获取成功');
                     video_url.attr('href', result.replace(/^https?\:\/\//i,'https://'));
                     video_url.show();
+                    if(!window.__BiliUser__.isLogin){
+                        $('#bilibili-player').before("<div id='my_dplayer' class='bilibili-player relative bilibili-player-no-cursor'></div>");
+                        $('#bilibili-player').hide();
+                        window.my_dplayer = new DPlayer({
+                            container: document.getElementById('my_dplayer'),
+                            video: {
+                                url: result.replace(/^https?\:\/\//i,'https://'),
+                                type: "customFlv",
+                                customType: {
+                                    customFlv: function (video, player) {
+                                        const flvPlayer = flvjs.createPlayer({
+                                            type: "flv",
+                                            url: video.src,
+                                        });
+                                        flvPlayer.attachMediaElement(video);
+                                        flvPlayer.load();
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }else{
                     console.log('url获取失败');
                 }
-
             }
         });
     });
 
+    function refresh(){
+        video_url.hide();
+        if(!window.__BiliUser__.isLogin){
+            //window.my_dplayer.pause();
+            $('#my_dplayer').remove();
+            $('#bilibili-player').show();
+        }
+    }
+
     // 监听p
     $('body').on('click','.list-box',function(){
-        video_url.hide()
+        refresh();
     });
 
     // 监听q
     $('body').on('click','li.bui-select-item',function(){
-        video_url.hide();
+        refresh();
     });
 
     // 监听aid 右侧推荐
     $('body').on('click','.rec-list',function(){
-        video_url.hide();
+        refresh();
     });
 
     // 监听aid 视频内部推荐
     $('body').on('click','.bilibili-player-ending-panel-box-videos',function(){
-        video_url.hide();
+        refresh();
     });
 
     // 定时检查 aid 和 cid
     setInterval(function(){
         if(aid !== window.aid || cid !== window.cid){
-            video_url.hide();
+            refresh();
         }
     },3000);
 
