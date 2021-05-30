@@ -4,8 +4,7 @@
 // @version      0.1.8
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
-// @match        *://www.bilibili.com/video/av*
-// @match        *://www.bilibili.com/video/BV*
+// @match        *://www.bilibili.com/video/*
 // @match        *://www.bilibili.com/bangumi/play/ep*
 // @license      MIT
 // @grant        none
@@ -74,7 +73,7 @@
             type = 'bangumi';
             epid = local_host.match(/\d+/g)[0];
             api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
-        }else if(local_host.match(/bilibili.com\/video\/av/)){
+        }else if(local_host.match(/bilibili.com\/video\//)){
             type = 'video';
             api_url =`https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}`;
         }
