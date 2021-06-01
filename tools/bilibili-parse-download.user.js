@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.1.9
+// @version      0.1.10
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/*
@@ -99,26 +99,23 @@
             success:function(result){
                 if(result !== ''){
                     console.log('url获取成功');
-                    video_url.attr('href', result.replace(/^https?\:\/\//i,'https://'));
+                    const url = result.replace(/^https?\:\/\//i,'https://');
+                    let video_type;
+                    video_url.attr('href', url);
                     video_url.show();
+                    if(url.match(/.mp4/)){
+                        video_type = 'mp4';
+                    }else if(url.match(/.flv/)){
+                        video_type = 'flv';
+                    }
                     if(!window.__BiliUser__.isLogin){
                         $('#bilibili-player').before("<div id='my_dplayer' class='bilibili-player relative bilibili-player-no-cursor'></div>");
                         $('#bilibili-player').hide();
                         window.my_dplayer = new DPlayer({
                             container: document.getElementById('my_dplayer'),
                             video: {
-                                url: result.replace(/^https?\:\/\//i,'https://'),
-                                type: "customFlv",
-                                customType: {
-                                    customFlv: function (video, player) {
-                                        const flvPlayer = flvjs.createPlayer({
-                                            type: "flv",
-                                            url: video.src,
-                                        });
-                                        flvPlayer.attachMediaElement(video);
-                                        flvPlayer.load();
-                                    }
-                                }
+                                url: url,
+                                type: video_type
                             }
                         });
                     }
@@ -132,29 +129,29 @@
     function refresh(){
         video_url.hide();
         if(!window.__BiliUser__.isLogin){
-            //window.my_dplayer.pause();
+            window.my_dplayer.destroy();
             $('#my_dplayer').remove();
             $('#bilibili-player').show();
         }
     }
 
     // 监听p
-    $('body').on('click','.list-box',function(){
+    $('body').on('click','.list-box', function(){
         refresh();
     });
 
     // 监听q
-    $('body').on('click','li.bui-select-item',function(){
+    $('body').on('click', 'li.bui-select-item', function(){
         refresh();
     });
 
     // 监听aid 右侧推荐
-    $('body').on('click','.rec-list',function(){
+    $('body').on('click', '.rec-list', function(){
         refresh();
     });
 
     // 监听aid 视频内部推荐
-    $('body').on('click','.bilibili-player-ending-panel-box-videos',function(){
+    $('body').on('click', '.bilibili-player-ending-panel-box-videos', function(){
         refresh();
     });
 
