@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.1.10
+// @version      0.2.0
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/*
@@ -17,6 +17,7 @@
 
     let aid = '', epid='', p = '', q='', cid = window.cid;
     let aid_temp = '', p_temp = '', q_temp = '';
+    let is_first_load = true;
     const topBox =
           "<div style='position:fixed;z-index:999999;cursor:pointer;top:60px;left:0px;'>"+
           "<div id='bilibili_parse' style='font-size:14px;padding:10px 2px;color:#000000;background-color:#00a1d6;'>请求地址</div>"+
@@ -25,17 +26,13 @@
           "</div>"+
           "</div>";
     $('body').append(topBox);
-    // 引用外链播放器
-    $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
-    $('body').append('<script src="https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js"></script>');
-    $('body').append('<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>');
 
     const video_url = $('#video_url');
 
     $('body').on('click','#bilibili_parse',function(){
 
-        // 更新cid和aid
-        cid = window.cid
+        // 更新cid和aid - 2
+        cid = window.cid;
         aid = window.aid;
         if(!aid){
             const link_av = $('link[rel="canonical"]')[0].href;
@@ -63,6 +60,13 @@
         q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
         q = q || '32';
         if(!window.__BiliUser__.isLogin){
+            if(is_first_load){
+                // 引用外链播放器
+                $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
+                $('body').append('<script src="https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js"></script>');
+                $('body').append('<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>');
+                is_first_load = false;
+            }
             let q_max = $('.bui-select-item')[0].dataset.value || q;
             q = q_max > 80 ? 80 : q_max;
             // 暂停视频准备换源
@@ -127,12 +131,21 @@
     });
 
     function refresh(){
+        console.log('refresh');
         video_url.hide();
         if(!window.__BiliUser__.isLogin){
-            window.my_dplayer.destroy();
-            $('#my_dplayer').remove();
-            $('#bilibili-player').show();
+            if (window.my_dplayer){
+                console.log('销毁dplayer');
+                //window.my_dplayer.plugins.flvjs.destroy()
+                window.my_dplayer.destroy();
+                window.my_dplayer = null;
+                $('#my_dplayer').remove();
+                $('#bilibili-player').show();
+            }
         }
+        // 更新cid和aid - 1
+        aid = window.aid;
+        cid = window.cid;
     }
 
     // 监听p
