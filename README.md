@@ -1,6 +1,6 @@
 # bilibili-parse
 
-> bilibili flv 视频源地址解析 API
+> bilibili 视频解析 API
 
 ## Descriptions
 
