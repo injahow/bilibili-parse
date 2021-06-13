@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.2.1
+// @version      0.2.2
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -11,6 +11,7 @@
 // @license      MIT
 // @grant        none
 // @require      https://static.hdslb.com/js/jquery.min.js
+/* globals jQuery, $, DPlayer waitForKeyElements */
 // ==/UserScript==
 
 (function() {
@@ -137,7 +138,7 @@
 
     function refresh(){
         console.log('refresh');
-        if($('#video_url_span').length > 0){
+        if(document.getElementById('video_url_span')){
             $('#video_url_span').hide();
         }
         if(!window.__BiliUser__.isLogin){
