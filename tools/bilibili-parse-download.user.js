@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.2.3
-// @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
+// @version      0.2.4
+// @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
 // @match        *://www.bilibili.com/video/BV*
@@ -11,7 +11,7 @@
 // @license      MIT
 // @grant        none
 // @require      https://static.hdslb.com/js/jquery.min.js
-/* globals jQuery, $, DPlayer waitForKeyElements */
+/* globals $, DPlayer waitForKeyElements */
 // ==/UserScript==
 
 (function() {
@@ -94,9 +94,7 @@
 
         if (aid === aid_temp && p === p_temp && q === q_temp){
             console.log('重复请求');
-            $('#video_url').show();
-
-
+            $('#video_download').show();
             return;
         }
         aid_temp = aid;
