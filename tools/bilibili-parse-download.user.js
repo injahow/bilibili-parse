@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.2.2
+// @version      0.2.3
 // @description  仅支持flv视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -20,20 +20,33 @@
     let aid = '', epid='', p = '', q='', cid = window.cid;
     let aid_temp = '', p_temp = '', q_temp = '';
     let is_first_load = true;
-    const my_toolbar =
-          '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true">'+
-          '<div class="ops">'+
-          '<span id="bilibili_parse" title="download" class="like">'+
-          '<i class="van-icon-biaoqing"></i>请求地址</span>'+
-          '<span id="video_url_span" style="display:none" title="download" class="like">'+
-          '<a id="video_url" target="_blank" referrerpolicy="origin" href="#"><i class="van-icon-download"></i>下载视频</a></span>'+
-          '</div></div>';
-
+    let my_toolbar;
+    $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     // 暂且延迟处理...
     setTimeout(function(){
-        $("#arc_toolbar_report").after(my_toolbar);
+        if(document.getElementById('arc_toolbar_report')){
+            my_toolbar =
+                '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true">'+
+                '<div class="ops">'+
+                '<span id="bilibili_parse">'+
+                '<i class="van-icon-floatwindow_custome"></i>请求地址</span>'+
+                '<span id="video_download" style="display:none">'+
+                '<i class="van-icon-download"></i>下载视频</span>'+
+                '</div></div>';
+            $("#arc_toolbar_report").after(my_toolbar);
+        }else if(document.getElementById('toolbar_module')){
+            my_toolbar =
+                '<div id="toolbar_module_2" class="tool-bar clearfix report-wrap-module report-scroll-module media-info" scrollshow="true">'+
+                '<div id="bilibili_parse" class="like-info"><i class="iconfont icon-customer-serv"></i><span >请求地址</span></div>'+
+                '<div id="video_download" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>'+
+                '</div>';
+            $("#toolbar_module").after(my_toolbar);
+        }
     }, 3000)
 
+    $('body').on('click','#video_download',function(){
+        $('#video_url')[0].click();
+    });
 
     $('body').on('click','#bilibili_parse',function(){
 
@@ -82,6 +95,8 @@
         if (aid === aid_temp && p === p_temp && q === q_temp){
             console.log('重复请求');
             $('#video_url').show();
+
+
             return;
         }
         aid_temp = aid;
@@ -112,7 +127,7 @@
                     const url = result.replace(/^https?\:\/\//i,'https://');
                     let video_type;
                     $('#video_url').attr('href', url);
-                    $('#video_url_span').show();
+                    $('#video_download').show();
                     if(url.match(/.mp4/)){
                         video_type = 'mp4';
                     }else if(url.match(/.flv/)){
@@ -138,8 +153,8 @@
 
     function refresh(){
         console.log('refresh');
-        if(document.getElementById('video_url_span')){
-            $('#video_url_span').hide();
+        if(document.getElementById('video_download')){
+            $('#video_download').hide();
         }
         if(!window.__BiliUser__.isLogin){
             if (window.my_dplayer){
