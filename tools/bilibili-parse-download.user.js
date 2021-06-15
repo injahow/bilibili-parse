@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.2.4
+// @version      0.2.5
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -17,7 +17,7 @@
 (function() {
     'use strict';
 
-    let aid = '', epid='', p = '', q='', cid = window.cid;
+    let aid = '', epid='', p = '', q='', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
     let is_first_load = true;
     let my_toolbar;
@@ -26,12 +26,9 @@
     setTimeout(function(){
         if(document.getElementById('arc_toolbar_report')){
             my_toolbar =
-                '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true">'+
-                '<div class="ops">'+
-                '<span id="bilibili_parse">'+
-                '<i class="van-icon-floatwindow_custome"></i>请求地址</span>'+
-                '<span id="video_download" style="display:none">'+
-                '<i class="van-icon-download"></i>下载视频</span>'+
+                '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true"><div class="ops">'+
+                '<span id="bilibili_parse"><i class="van-icon-floatwindow_custome"></i>请求地址</span>'+
+                '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>'+
                 '</div></div>';
             $("#arc_toolbar_report").after(my_toolbar);
         }else if(document.getElementById('toolbar_module')){
@@ -42,7 +39,7 @@
                 '</div>';
             $("#toolbar_module").after(my_toolbar);
         }
-    }, 3000)
+    }, 3000);
 
     $('body').on('click','#video_download',function(){
         $('#video_url')[0].click();
@@ -54,15 +51,8 @@
         cid = window.cid;
         aid = window.aid;
         if(!aid){
-            const link_av = $('link[rel="canonical"]')[0].href;
-            const patt = /bilibili.com\/video\/av\d+/g;
-            if(patt.test(link_av)){
-                aid = link_av.replace(/[^0-9]/ig, '');
-                console.log('获取aid:',aid);
-            } else {
-                console.log('aid获取出错！');
-                return;
-            }
+            // 异常或vip
+            console.log('aid获取出错！');
         }
 
         // 获取视频分页参数p
@@ -78,7 +68,7 @@
         // 获取视频分辨率参数q
         q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
         q = q || '32';
-        if(!window.__BiliUser__.isLogin){
+        if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && $('li.cursor div').text() === '会员' && window.__BILI_USER_INFO__.vipStatus === 0)){
             if(is_first_load){
                 // 引用外链播放器
                 $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
@@ -131,7 +121,7 @@
                     }else if(url.match(/.flv/)){
                         video_type = 'flv';
                     }
-                    if(!window.__BiliUser__.isLogin){
+                    if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && $('li.cursor div').text() === '会员' && window.__BILI_USER_INFO__.vipStatus === 0)){
                         $('#bilibili-player').before("<div id='my_dplayer' class='bilibili-player relative bilibili-player-no-cursor'></div>");
                         $('#bilibili-player').hide();
                         window.my_dplayer = new DPlayer({
@@ -154,14 +144,12 @@
         if(document.getElementById('video_download')){
             $('#video_download').hide();
         }
-        if(!window.__BiliUser__.isLogin){
-            if (window.my_dplayer){
-                console.log('销毁dplayer');
-                window.my_dplayer.destroy();
-                window.my_dplayer = null;
-                $('#my_dplayer').remove();
-                $('#bilibili-player').show();
-            }
+        if (window.my_dplayer){
+            console.log('销毁dplayer');
+            window.my_dplayer.destroy();
+            window.my_dplayer = null;
+            $('#my_dplayer').remove();
+            $('#bilibili-player').show();
         }
         // 更新cid和aid - 1
         aid = window.aid;
