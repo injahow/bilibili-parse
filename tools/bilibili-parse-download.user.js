@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.2.5
+// @version      0.3.0
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -19,8 +19,9 @@
 
     let aid = '', epid='', p = '', q='', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
-    let is_first_load = true;
-    let my_toolbar;
+    let is_first_load = true, need_vip = false;
+    let my_toolbar = '';
+    let flag_name = '';
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     // 暂且延迟处理...
     setTimeout(function(){
@@ -41,34 +42,51 @@
         }
     }, 3000);
 
-    $('body').on('click','#video_download',function(){
+    $('body').on('click', '#video_download',function(){
         $('#video_url')[0].click();
     });
 
-    $('body').on('click','#bilibili_parse',function(){
+    $('body').on('click', '#bilibili_parse',function(){
 
-        // 更新cid和aid - 2
-        cid = window.cid;
-        aid = window.aid;
-        if(!aid){
-            // 异常或vip
-            console.log('aid获取出错！');
+        let location_href = window.location.href;
+        if(location_href.match(/bilibili.com\/bangumi\/play\/ep/)){
+            flag_name = 'ep';
+            need_vip = window.__INITIAL_STATE__.epInfo.badge === '会员';
+        }else if(location_href.match(/bilibili.com\/bangumi\/play\/ss/)){
+            flag_name = 'ss';
+            need_vip = window.__INITIAL_STATE__.epInfo.badge === '会员';
+        }else if(location_href.match(/bilibili.com\/video\/av/)){
+            flag_name = 'av';
+        }else if(location_href.match(/bilibili.com\/video\/BV/)){
+            flag_name = 'bv';
         }
 
-        // 获取视频分页参数p
-        let query_arr = window.location.search.substring(1).split('&');
-        for (let i=0; i<query_arr.length; i++) {
-            let pair = query_arr[i].split('=');
-            if(pair[0] == 'p'){
-                p = pair[1];
+        if(!aid){
+            // 更新cid和aid - 2
+            const ids = get_all_id();
+            aid = ids.aid;
+            cid = ids.cid;
+            if(!aid){
+                // 异常
+                console.log('aid获取出错！');
             }
+        }
+
+        // 获取视频分页参数q
+        if(flag_name === 'ep' || flag_name === 'ss'){
+            p = window.__INITIAL_STATE__.epInfo.i;
+        }else if(flag_name === 'av' || flag_name === 'bv') {
+            p = window.__INITIAL_STATE__.p;
         }
         p = p || '1';
 
         // 获取视频分辨率参数q
-        q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
-        q = q || '32';
-        if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && $('li.cursor div').text() === '会员' && window.__BILI_USER_INFO__.vipStatus === 0)){
+        if(!!$('li.bui-select-item.bui-select-item-active').attr('data-value')){
+            q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
+        }
+        q = q || '80';
+
+        if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && window.__BILI_USER_INFO__.vipStatus === 0 && need_vip)){
             if(is_first_load){
                 // 引用外链播放器
                 $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
@@ -76,10 +94,16 @@
                 $('body').append('<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>');
                 is_first_load = false;
             }
-            let q_max = $('.bui-select-item')[0].dataset.value || q;
-            q = q_max > 80 ? 80 : q_max;
+            if(!!$('.bui-select-item')[0]){
+                let q_max = $('.bui-select-item')[0].dataset.value || q;
+                q = q_max > 80 ? 80 : q_max;
+            }else{
+                q = 80;
+            }
             // 暂停视频准备换源
-            $('video[crossorigin="anonymous"]')[0].pause();
+            if(!!$('video[crossorigin="anonymous"]')[0]){
+                $('video[crossorigin="anonymous"]')[0].pause();
+            }
         }
 
         if (aid === aid_temp && p === p_temp && q === q_temp){
@@ -87,24 +111,24 @@
             $('#video_download').show();
             return;
         }
+
         aid_temp = aid;
         p_temp = p;
         q_temp = q;
 
         console.log('开始解析');
         let type, api_url;
-        let local_host = window.location.href;
-        if(local_host.match(/bilibili.com\/bangumi\/play\/ep/)){
+        if(flag_name === 'ep'){
             type = 'bangumi';
-            epid = local_host.match(/\d+/g)[0];
+            epid = location_href.match(/\d+/g)[0];
             api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
-        }else if(local_host.match(/bilibili.com\/bangumi\/play\/ss/)){
+        }else if(flag_name === 'ss'){
             type = 'bangumi';
             epid = window.__INITIAL_STATE__.epInfo.id;
             api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
-        }else if(local_host.match(/bilibili.com\/video\//)){
+        }else if(flag_name === 'av' || flag_name === 'bv'){
             type = 'video';
-            api_url =`https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}`;
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}`;
         }
         $.ajax({
             url: api_url,
@@ -112,18 +136,18 @@
             success:function(result){
                 if(result !== ''){
                     console.log('url获取成功');
-                    const url = result.replace(/^https?\:\/\//i,'https://');
-                    let video_type;
+                    const url = result.replace(/^https?\:\/\//i, 'https://');
                     $('#video_url').attr('href', url);
                     $('#video_download').show();
-                    if(url.match(/.mp4/)){
-                        video_type = 'mp4';
-                    }else if(url.match(/.flv/)){
-                        video_type = 'flv';
-                    }
-                    if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && $('li.cursor div').text() === '会员' && window.__BILI_USER_INFO__.vipStatus === 0)){
+                    if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && window.__BILI_USER_INFO__.vipStatus === 0 && need_vip)){
                         $('#bilibili-player').before("<div id='my_dplayer' class='bilibili-player relative bilibili-player-no-cursor'></div>");
                         $('#bilibili-player').hide();
+                        let video_type;
+                        if(url.match(/.mp4/)){
+                            video_type = 'mp4';
+                        }else if(url.match(/.flv/)){
+                            video_type = 'flv';
+                        }
                         window.my_dplayer = new DPlayer({
                             container: document.getElementById('my_dplayer'),
                             video: {
@@ -139,8 +163,25 @@
         });
     });
 
+    function get_all_id(){
+        let _aid, _cid;
+        if(window.aid && window.cid){
+            _aid = window.aid;
+            _cid = window.cid;
+        }else if(flag_name === 'ep' || flag_name === 'ss'){
+            _aid = window.__INITIAL_STATE__.epInfo.aid;
+            _cid = window.__INITIAL_STATE__.epInfo.cid;
+        }else if(flag_name === 'av' || flag_name === 'bv') {
+            _aid = window.__INITIAL_STATE__.videoData.aid;
+            _cid = window.__INITIAL_STATE__.videoData.cid;
+        }
+        return {aid: _aid, cid: _cid}
+    }
+
+
+
     function refresh(){
-        console.log('refresh');
+        console.log('refresh...');
         if(document.getElementById('video_download')){
             $('#video_download').hide();
         }
@@ -152,12 +193,17 @@
             $('#bilibili-player').show();
         }
         // 更新cid和aid - 1
-        aid = window.aid;
-        cid = window.cid;
+        const ids = get_all_id();
+        aid = ids.aid;
+        cid = ids.cid;
     }
 
     // 监听p
     $('body').on('click','.list-box', function(){
+        refresh();
+    });
+
+    $('body').on('click','li.ep-item', function(){
         refresh();
     });
 
@@ -178,7 +224,9 @@
 
     // 定时检查 aid 和 cid
     setInterval(function(){
-        if(aid !== window.aid || cid !== window.cid){
+        const ids = get_all_id();
+        let _aid = ids.aid , _cid = ids.cid ;
+        if(aid !== _aid || cid !== _cid){
             refresh();
         }
     },3000);
