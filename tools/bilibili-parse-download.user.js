@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.3.0
+// @version      0.3.1
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -57,8 +57,10 @@
             need_vip = window.__INITIAL_STATE__.epInfo.badge === '会员';
         }else if(location_href.match(/bilibili.com\/video\/av/)){
             flag_name = 'av';
+            need_vip = false;
         }else if(location_href.match(/bilibili.com\/video\/BV/)){
             flag_name = 'bv';
+            need_vip = false;
         }
 
         if(!aid){
@@ -178,8 +180,6 @@
         return {aid: _aid, cid: _cid}
     }
 
-
-
     function refresh(){
         console.log('refresh...');
         if(document.getElementById('video_download')){
@@ -199,11 +199,11 @@
     }
 
     // 监听p
-    $('body').on('click','.list-box', function(){
+    $('body').on('click', '.list-box', function(){
         refresh();
     });
 
-    $('body').on('click','li.ep-item', function(){
+    $('body').on('click', 'li.ep-item', function(){
         refresh();
     });
 
@@ -225,8 +225,7 @@
     // 定时检查 aid 和 cid
     setInterval(function(){
         const ids = get_all_id();
-        let _aid = ids.aid , _cid = ids.cid ;
-        if(aid !== _aid || cid !== _cid){
+        if(aid !== ids.aid || cid !== ids.cid){
             refresh();
         }
     },3000);
