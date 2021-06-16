@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.3.5
+// @version      0.3.6
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -45,6 +45,26 @@
     $('body').on('click', '#video_download',function(){
         $('#video_url')[0].click();
     });
+    function replace_player(url){
+        $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
+        $('#bilibili-player').hide();
+        if(!!$('#player_mask_module')[0]){
+            $('#player_mask_module').hide();
+        }
+        let video_type;
+        if(url.match(/.mp4/)){
+            video_type = 'mp4';
+        }else if(url.match(/.flv/)){
+            video_type = 'flv';
+        }
+        window.my_dplayer = new DPlayer({
+            container: document.getElementById('my_dplayer'),
+            video: {
+                url: url,
+                type: video_type
+            }
+        });
+    }
 
     $('body').on('click', '#bilibili_parse',function(){
         let location_href = window.location.href;
@@ -122,6 +142,12 @@
         if (aid === aid_temp && p === p_temp && q === q_temp){
             console.log('重复请求');
             $('#video_download').show();
+            const url = $('#video_url').attr('href')
+            if (url){
+                if(!is_login || (is_login && vip_status === 0 && need_vip)){
+                    replace_player(url);
+                }
+            }
             return;
         }
 
@@ -152,27 +178,8 @@
                     const url = result.replace(/^https?\:\/\//i, 'https://');
                     $('#video_url').attr('href', url);
                     $('#video_download').show();
-                    console.log(is_login, vip_status, need_vip);
                     if(!is_login || (is_login && vip_status === 0 && need_vip)){
-                        $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
-                        $('#bilibili-player').hide();
-                        if(!!$('#player_mask_module')[0]){
-                            $('#player_mask_module').hide();
-
-                        }
-                        let video_type;
-                        if(url.match(/.mp4/)){
-                            video_type = 'mp4';
-                        }else if(url.match(/.flv/)){
-                            video_type = 'flv';
-                        }
-                        window.my_dplayer = new DPlayer({
-                            container: document.getElementById('my_dplayer'),
-                            video: {
-                                url: url,
-                                type: video_type
-                            }
-                        });
+                        replace_player(url);
                     }
                 }else{
                     console.log('url获取失败');
