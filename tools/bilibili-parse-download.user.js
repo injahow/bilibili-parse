@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.3.4
+// @version      0.3.5
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -154,10 +154,11 @@
                     $('#video_download').show();
                     console.log(is_login, vip_status, need_vip);
                     if(!is_login || (is_login && vip_status === 0 && need_vip)){
-                        $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="height: 500px;"></div>');
+                        $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
                         $('#bilibili-player').hide();
                         if(!!$('#player_mask_module')[0]){
                             $('#player_mask_module').hide();
+
                         }
                         let video_type;
                         if(url.match(/.mp4/)){
@@ -185,10 +186,7 @@
 
     function get_all_id(){
         let _aid, _cid;
-        if(window.aid && window.cid){
-            _aid = window.aid;
-            _cid = window.cid;
-        }else if(flag_name === 'ep' || flag_name === 'ss'){
+        if(flag_name === 'ep' || flag_name === 'ss'){
             _aid = window.__INITIAL_STATE__.epInfo.aid;
             _cid = window.__INITIAL_STATE__.epInfo.cid;
         }else if(flag_name === 'av' || flag_name === 'bv') {
