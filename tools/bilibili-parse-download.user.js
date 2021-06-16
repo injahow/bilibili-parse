@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.3.1
+// @version      0.3.2
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -19,7 +19,7 @@
 
     let aid = '', epid='', p = '', q='', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
-    let is_first_load = true, need_vip = false;
+    let is_first_load = true, need_vip = false, is_login=false, vip_status = 0;
     let my_toolbar = '';
     let flag_name = '';
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
@@ -47,7 +47,6 @@
     });
 
     $('body').on('click', '#bilibili_parse',function(){
-
         let location_href = window.location.href;
         if(location_href.match(/bilibili.com\/bangumi\/play\/ep/)){
             flag_name = 'ep';
@@ -62,7 +61,6 @@
             flag_name = 'bv';
             need_vip = false;
         }
-
         if(!aid){
             // 更新cid和aid - 2
             const ids = get_all_id();
@@ -73,7 +71,6 @@
                 console.log('aid获取出错！');
             }
         }
-
         // 获取视频分页参数q
         if(flag_name === 'ep' || flag_name === 'ss'){
             p = window.__INITIAL_STATE__.epInfo.i;
@@ -81,14 +78,28 @@
             p = window.__INITIAL_STATE__.p;
         }
         p = p || '1';
-
         // 获取视频分辨率参数q
         if(!!$('li.bui-select-item.bui-select-item-active').attr('data-value')){
             q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
+            if(q === '0'){
+                let q_max = $('.bui-select-item')[0].dataset.value || q;
+                q = q_max > 80 ? 80 : q_max;
+            }
         }
-        q = q || '80';
 
-        if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && window.__BILI_USER_INFO__.vipStatus === 0 && need_vip)){
+        q = q || '80';
+        // 获取用户状态
+        if(window.__BILI_USER_INFO__){
+            is_login = window.__BILI_USER_INFO__.isLogin;
+            vip_status = window.__BILI_USER_INFO__.vipStatus;
+        }else if(window.__BiliUser__){
+            is_login = window.__BiliUser__.isLogin;
+            vip_status = window.__BiliUser__.cache.data.vipStatus;
+        }else{
+            is_login = false;
+            vip_status = 0;
+        }
+        if(!is_login || (is_login && vip_status === 0 && need_vip)){
             if(is_first_load){
                 // 引用外链播放器
                 $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
@@ -141,7 +152,8 @@
                     const url = result.replace(/^https?\:\/\//i, 'https://');
                     $('#video_url').attr('href', url);
                     $('#video_download').show();
-                    if(!window.__BiliUser__.isLogin || (window.__BiliUser__.isLogin && window.__BILI_USER_INFO__.vipStatus === 0 && need_vip)){
+
+                    if(!is_login || (is_login && vip_status === 0 && need_vip)){
                         $('#bilibili-player').before("<div id='my_dplayer' class='bilibili-player relative bilibili-player-no-cursor'></div>");
                         $('#bilibili-player').hide();
                         let video_type;
@@ -161,6 +173,9 @@
                 }else{
                     console.log('url获取失败');
                 }
+            },
+            error:function(error){
+                console.log('error:', error);
             }
         });
     });
