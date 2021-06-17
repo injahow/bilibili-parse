@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.3.7
+// @version      0.4.0
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -17,25 +17,25 @@
 (function() {
     'use strict';
 
-    let aid = '', epid='', p = '', q = '', cid = '';
+    let aid = '', epid = '', p = '', q = '', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
-    let is_first_load = true, need_vip = false, is_login=false, vip_status = 0;
+    let is_first_load = true, need_vip = false, is_login = false, vip_status = 0;
     let my_toolbar = '';
     let flag_name = '';
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     // 暂且延迟处理...
     setTimeout(function(){
-        if(document.getElementById('arc_toolbar_report')){
+        if(!!$('#arc_toolbar_report')[0]){
             my_toolbar =
                 '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true"><div class="ops">'+
                 '<span id="bilibili_parse"><i class="van-icon-floatwindow_custome"></i>请求地址</span>'+
                 '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>'+
                 '</div></div>';
             $("#arc_toolbar_report").after(my_toolbar);
-        }else if(document.getElementById('toolbar_module')){
+        }else if(!!$('#toolbar_module')[0]){
             my_toolbar =
                 '<div id="toolbar_module_2" class="tool-bar clearfix report-wrap-module report-scroll-module media-info" scrollshow="true">'+
-                '<div id="bilibili_parse" class="like-info"><i class="iconfont icon-customer-serv"></i><span >请求地址</span></div>'+
+                '<div id="bilibili_parse" class="like-info"><i class="iconfont icon-customer-serv"></i><span>请求地址</span></div>'+
                 '<div id="video_download" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>'+
                 '</div>';
             $("#toolbar_module").after(my_toolbar);
@@ -45,23 +45,53 @@
     $('body').on('click', '#video_download',function(){
         $('#video_url')[0].click();
     });
+
     function replace_player(url){
         $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
         $('#bilibili-player').hide();
-        if(!!$('#player_mask_module')[0]){
-            $('#player_mask_module').hide();
-        }
-        let video_type;
-        if(url.match(/.mp4/)){
-            video_type = 'mp4';
-        }else if(url.match(/.flv/)){
-            video_type = 'flv';
-        }
+        $('#danmukuBox').hide();//隐藏弹幕列表
+        !!$('#player_mask_module')[0] && $('#player_mask_module').hide();
         window.my_dplayer = new DPlayer({
-            container: document.getElementById('my_dplayer'),
+            container: $('#my_dplayer')[0],
             video: {
                 url: url,
-                type: video_type
+                type: 'auto'
+            },
+            danmaku: true,
+            apiBackend: {
+                read: function (options) {
+                    let danmaku_data;
+                    $.ajax({
+                        url: `https://api.bilibili.com/x/v1/dm/list.so?oid=${cid}`,
+                        dataType: 'text',
+                        success:function(result){
+                            $('body').append('<div id="my_danmaku" style="display:none">'+result.replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, '')+'</div>')
+                            if(!$('div#my_danmaku d')[0]){
+                                options.error('未登录，弹幕api请求失败');
+                                return;
+                            }
+                            danmaku_data = $('div#my_danmaku d').map((i, el) => {
+                                const item = $(el);
+                                const p = item.attr('p').split(',');
+                                let type = 0;
+                                if(p[1] === '4'){
+                                    type = 2;
+                                }else if(p[1] === '5'){
+                                    type = 1;
+                                }
+                                return [{author: '', time: parseFloat(p[0]), type: type, color: parseInt(p[3]), id: '', text: item.text()}];
+                            }).get();
+                            $('#my_danmaku').remove();
+                            options.success(danmaku_data);
+                        },
+                        error:function(error){
+                            options.error('弹幕api请求异常');
+                        }
+                    });
+                },
+                send: function (options) {
+                    options.error('此脚本无法发送弹幕')
+                }
             }
         });
     }
@@ -91,6 +121,7 @@
                 console.log('aid获取出错！');
             }
         }
+
         // 获取视频分页参数q
         if(flag_name === 'ep' || flag_name === 'ss'){
             p = window.__INITIAL_STATE__.epInfo.i;
@@ -98,16 +129,17 @@
             p = window.__INITIAL_STATE__.p;
         }
         p = p || '1';
+
         // 获取视频分辨率参数q
         if(!!$('li.bui-select-item.bui-select-item-active').attr('data-value')){
             q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
             if(q === '0'){
-                let q_max = $('.bui-select-item')[0].dataset.value || q;
+                let q_max = $('.bui-select-item')[0].dataset.value;
                 q = q_max > 80 ? 80 : q_max;
             }
         }
-
         q = q || '80';
+
         // 获取用户状态
         if(window.__BILI_USER_INFO__){
             is_login = window.__BILI_USER_INFO__.isLogin;
@@ -128,15 +160,13 @@
                 is_first_load = false;
             }
             if(!!$('.bui-select-item')[0]){
-                let q_max = $('.bui-select-item')[0].dataset.value || q;
+                let q_max = $('.bui-select-item')[0].dataset.value;
                 q = q_max > 80 ? 80 : q_max;
             }else{
                 q = 80;
             }
             // 暂停视频准备换源
-            if(!!$('video[crossorigin="anonymous"]')[0]){
-                $('video[crossorigin="anonymous"]')[0].pause();
-            }
+            !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         }
 
         if (aid === aid_temp && p === p_temp && q === q_temp){
@@ -145,7 +175,7 @@
             if (url && url !== '#'){
                 $('#video_download').show();
                 if(!is_login || (is_login && vip_status === 0 && need_vip)){
-                    replace_player(url);
+                    !$('#my_dplayer')[0] && replace_player(url);
                 }
             }
             return;
@@ -205,9 +235,7 @@
 
     function refresh(){
         console.log('refresh...');
-        if(document.getElementById('video_download')){
-            $('#video_download').hide();
-        }
+        !!('#video_download')[0] && $('#video_download').hide();
         if (window.my_dplayer){
             console.log('销毁dplayer');
             window.my_dplayer.destroy();
