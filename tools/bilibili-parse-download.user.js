@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
-// @version      0.4.1
-// @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
+// @version      0.4.2
+// @description  支持下载番剧与用户上传视频，建议使用IDM等多线程下载工具下载
 // @author       injahow
 // @copyright    2021, injahow (https://github.com/injahow)
 // @match        *://www.bilibili.com/video/av*
@@ -68,11 +68,11 @@
                         url: `https://api.bilibili.com/x/v1/dm/list.so?oid=${cid}`,
                         dataType: 'text',
                         success:function(result){
-                            $('body').append('<div id="my_danmaku" style="display:none">'+result.replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, '')+'</div>')
-                            if(!$('div#my_danmaku d')[0]){
-                                options.error('弹幕请求为空');
+                            const result_dom = $(result.replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, ''));
+                            if(!result_dom.find('d')[0]){
+                                options.error('弹幕请求失败');
                             }else{
-                                const danmaku_data = $('div#my_danmaku d').map((i, el) => {
+                                const danmaku_data = result_dom.find('d').map((i, el) => {
                                     const item = $(el);
                                     const p = item.attr('p').split(',');
                                     let type = 0;
