@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.3.6
+// @version      0.3.7
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
 // @match        *://www.bilibili.com/video/av*
@@ -17,7 +17,7 @@
 (function() {
     'use strict';
 
-    let aid = '', epid='', p = '', q='', cid = '';
+    let aid = '', epid='', p = '', q = '', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
     let is_first_load = true, need_vip = false, is_login=false, vip_status = 0;
     let my_toolbar = '';
@@ -141,9 +141,9 @@
 
         if (aid === aid_temp && p === p_temp && q === q_temp){
             console.log('重复请求');
-            $('#video_download').show();
             const url = $('#video_url').attr('href')
-            if (url){
+            if (url && url !== '#'){
+                $('#video_download').show();
                 if(!is_login || (is_login && vip_status === 0 && need_vip)){
                     replace_player(url);
                 }
@@ -186,7 +186,7 @@
                 }
             },
             error:function(error){
-                console.log('error:', error);
+                console.log('api请求异常', error);
             }
         });
     });
