@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
-// @version      0.4.2
-// @description  支持下载番剧与用户上传视频，建议使用IDM等多线程下载工具下载
+// @version      0.4.3
+// @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @copyright    2021, injahow (https://github.com/injahow)
 // @match        *://www.bilibili.com/video/av*
@@ -24,7 +24,7 @@
     let aid = '', epid = '', p = '', q = '', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
     let need_vip = false, is_login = false, vip_status = 0;
-    let my_toolbar = '';
+    let my_toolbar = '', player_tag = '';
     let flag_name = '';
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     // 暂且延迟处理...
@@ -51,8 +51,13 @@
     });
 
     function replace_player(url){
-        $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
-        $('#bilibiliPlayer').hide();
+        player_tag = '#bilibiliPlayer';
+        if(!!$('#bilibiliPlayer')[0]){
+            $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
+            $('#bilibiliPlayer').hide();
+        }else{
+            $('#bilibili-player').html('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
+        }
         $('#danmukuBox').hide();//隐藏弹幕列表
         !!$('#player_mask_module')[0] && $('#player_mask_module').hide();
         window.my_dplayer = new DPlayer({
@@ -85,7 +90,6 @@
                                 }).get();
                                 options.success(danmaku_data);
                             }
-                            $('#my_danmaku').remove();
                         },
                         error:function(error){
                             options.error('弹幕请求异常');
@@ -114,15 +118,14 @@
             flag_name = 'bv';
             need_vip = false;
         }
+
+        // 更新cid和aid - 2
+        const ids = get_all_id();
+        aid = ids.aid;
+        cid = ids.cid;
         if(!aid){
-            // 更新cid和aid - 2
-            const ids = get_all_id();
-            aid = ids.aid;
-            cid = ids.cid;
-            if(!aid){
-                // 异常
-                console.log('aid获取出错！');
-            }
+            // 异常
+            console.log('aid获取出错！');
         }
 
         // 获取视频分页参数q
@@ -237,8 +240,10 @@
             window.my_dplayer.destroy();
             window.my_dplayer = null;
             $('#my_dplayer').remove();
-            $('#bilibiliPlayer').show();
-            !!$('#player_mask_module')[0] && $('#player_mask_module').show();
+            !!$('#bilibiliPlayer')[0] && $('#bilibiliPlayer').show();
+            if(vip_status === 0 && need_vip){
+                !!$('#player_mask_module')[0] && $('#player_mask_module').show();
+            }
         }
         // 更新cid和aid - 1
         const ids = get_all_id();
