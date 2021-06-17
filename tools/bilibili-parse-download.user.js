@@ -1,25 +1,29 @@
 // ==UserScript==
 // @name         bilibili视频下载
-// @namespace    https://github.com/injahow
-// @version      0.4.0
+// @version      0.4.1
 // @description  支持番剧与用户上传视频，建议使用IDM下载，api接口见https://github.com/injahow/bilibili-parse
 // @author       injahow
+// @copyright    2021, injahow (https://github.com/injahow)
 // @match        *://www.bilibili.com/video/av*
 // @match        *://www.bilibili.com/video/BV*
 // @match        *://www.bilibili.com/bangumi/play/ep*
 // @match        *://www.bilibili.com/bangumi/play/ss*
+// @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
+// @downloadURL  https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
+// @homepage     https://github.com/injahow/bilibili-parse
 // @license      MIT
 // @grant        none
 // @require      https://static.hdslb.com/js/jquery.min.js
-/* globals $, DPlayer waitForKeyElements */
+// @require      https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js
+// @require      https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js
 // ==/UserScript==
-
+/* globals $, DPlayer waitForKeyElements */
 (function() {
     'use strict';
 
     let aid = '', epid = '', p = '', q = '', cid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
-    let is_first_load = true, need_vip = false, is_login = false, vip_status = 0;
+    let need_vip = false, is_login = false, vip_status = 0;
     let my_toolbar = '';
     let flag_name = '';
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
@@ -47,8 +51,8 @@
     });
 
     function replace_player(url){
-        $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
-        $('#bilibili-player').hide();
+        $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor"></div>');
+        $('#bilibiliPlayer').hide();
         $('#danmukuBox').hide();//隐藏弹幕列表
         !!$('#player_mask_module')[0] && $('#player_mask_module').hide();
         window.my_dplayer = new DPlayer({
@@ -60,32 +64,31 @@
             danmaku: true,
             apiBackend: {
                 read: function (options) {
-                    let danmaku_data;
                     $.ajax({
                         url: `https://api.bilibili.com/x/v1/dm/list.so?oid=${cid}`,
                         dataType: 'text',
                         success:function(result){
                             $('body').append('<div id="my_danmaku" style="display:none">'+result.replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, '')+'</div>')
                             if(!$('div#my_danmaku d')[0]){
-                                options.error('未登录，弹幕api请求失败');
-                                return;
+                                options.error('弹幕请求为空');
+                            }else{
+                                const danmaku_data = $('div#my_danmaku d').map((i, el) => {
+                                    const item = $(el);
+                                    const p = item.attr('p').split(',');
+                                    let type = 0;
+                                    if(p[1] === '4'){
+                                        type = 2;
+                                    }else if(p[1] === '5'){
+                                        type = 1;
+                                    }
+                                    return [{author: '', time: parseFloat(p[0]), type: type, color: parseInt(p[3]), id: '', text: item.text()}];
+                                }).get();
+                                options.success(danmaku_data);
                             }
-                            danmaku_data = $('div#my_danmaku d').map((i, el) => {
-                                const item = $(el);
-                                const p = item.attr('p').split(',');
-                                let type = 0;
-                                if(p[1] === '4'){
-                                    type = 2;
-                                }else if(p[1] === '5'){
-                                    type = 1;
-                                }
-                                return [{author: '', time: parseFloat(p[0]), type: type, color: parseInt(p[3]), id: '', text: item.text()}];
-                            }).get();
                             $('#my_danmaku').remove();
-                            options.success(danmaku_data);
                         },
                         error:function(error){
-                            options.error('弹幕api请求异常');
+                            options.error('弹幕请求异常');
                         }
                     });
                 },
@@ -128,7 +131,7 @@
         }else if(flag_name === 'av' || flag_name === 'bv') {
             p = window.__INITIAL_STATE__.p;
         }
-        p = p || '1';
+        p = p || 1;
 
         // 获取视频分辨率参数q
         if(!!$('li.bui-select-item.bui-select-item-active').attr('data-value')){
@@ -138,7 +141,7 @@
                 q = q_max > 80 ? 80 : q_max;
             }
         }
-        q = q || '80';
+        q = q || 80;
 
         // 获取用户状态
         if(window.__BILI_USER_INFO__){
@@ -152,13 +155,6 @@
             vip_status = 0;
         }
         if(!is_login || (is_login && vip_status === 0 && need_vip)){
-            if(is_first_load){
-                // 引用外链播放器
-                $('body').append('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.css">');
-                $('body').append('<script src="https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js"></script>');
-                $('body').append('<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>');
-                is_first_load = false;
-            }
             if(!!$('.bui-select-item')[0]){
                 let q_max = $('.bui-select-item')[0].dataset.value;
                 q = q_max > 80 ? 80 : q_max;
@@ -241,7 +237,8 @@
             window.my_dplayer.destroy();
             window.my_dplayer = null;
             $('#my_dplayer').remove();
-            $('#bilibili-player').show();
+            $('#bilibiliPlayer').show();
+            !!$('#player_mask_module')[0] && $('#player_mask_module').show();
         }
         // 更新cid和aid - 1
         const ids = get_all_id();
