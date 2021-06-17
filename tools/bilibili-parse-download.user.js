@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         bilibili视频下载
-// @version      0.4.3
+// @version      0.4.4
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @copyright    2021, injahow (https://github.com/injahow)
@@ -103,7 +103,7 @@
         });
     }
 
-    $('body').on('click', '#bilibili_parse',function(){
+    function get_video_status(){
         let location_href = window.location.href;
         if(location_href.match(/bilibili.com\/bangumi\/play\/ep/)){
             flag_name = 'ep';
@@ -118,6 +118,10 @@
             flag_name = 'bv';
             need_vip = false;
         }
+    }
+
+    $('body').on('click', '#bilibili_parse',function(){
+        get_video_status();
 
         // 更新cid和aid - 2
         const ids = get_all_id();
@@ -186,11 +190,7 @@
 
         console.log('开始解析');
         let type, api_url;
-        if(flag_name === 'ep'){
-            type = 'bangumi';
-            epid = location_href.match(/\d+/g)[0];
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
-        }else if(flag_name === 'ss'){
+        if(flag_name === 'ep' || flag_name === 'ss'){
             type = 'bangumi';
             epid = window.__INITIAL_STATE__.epInfo.id;
             api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}`;
@@ -241,9 +241,8 @@
             window.my_dplayer = null;
             $('#my_dplayer').remove();
             !!$('#bilibiliPlayer')[0] && $('#bilibiliPlayer').show();
-            if(vip_status === 0 && need_vip){
-                !!$('#player_mask_module')[0] && $('#player_mask_module').show();
-            }
+            get_video_status();// 更新视频状态
+            vip_status === 0 && need_vip && !!$('#player_mask_module')[0] && $('#player_mask_module').show();
         }
         // 更新cid和aid - 1
         const ids = get_all_id();
