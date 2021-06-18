@@ -6,7 +6,7 @@ if ($av == '') exit;
 $p = isset($_GET['p']) ? $_GET['p'] : 1;
 $q = isset($_GET['q']) ? $_GET['q'] : 32;
 
-include __DIR__ . 'src/Bilibili.php';
+include __DIR__ . '/src/Bilibili.php';
 
 use Injahow\Bilibili;
 
@@ -20,11 +20,7 @@ $bp->page($p);
 $bp->quality($q);
 
 // header('Content-type: application/octet-stream;');
-//$video->flv();
 $url = $bp->url();
-$header = array_map(function ($k, $v) {
-    return $k . ': ' . $v;
-}, array_keys($this->header), $this->header);
 $curl = curl_init();
 $ua = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.66 Safari/537.36';
 curl_setopt($curl, CURLOPT_USERAGENT, $ua);
