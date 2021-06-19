@@ -1,10 +1,10 @@
 <?php
 // ! 仅用于开发测试
-$av = isset($_GET['av']) ? $_GET['av'] : '';
-if ($av == '') exit;
+$av = isset($_GET['av']) ? intval($_GET['av']) : 0;
+if (!$av) exit;
 
-$p = isset($_GET['p']) ? $_GET['p'] : 1;
-$q = isset($_GET['q']) ? $_GET['q'] : 32;
+$p = isset($_GET['p']) ? intval($_GET['p']) : 1;
+$q = isset($_GET['q']) ? intval($_GET['q']) : 32;
 
 include __DIR__ . '/src/Bilibili.php';
 
@@ -13,11 +13,9 @@ use Injahow\Bilibili;
 $bp = new Bilibili('video');
 
 // 缓存 1h
-$bp->cache(true);
-$bp->cache_time(3600);
-$bp->aid($av);
-$bp->page($p);
-$bp->quality($q);
+$bp->cache(true)->cache_time(3600);
+
+$bp->aid($av)->page($p)->quality($q);
 
 // header('Content-type: application/octet-stream;');
 $url = $bp->url();

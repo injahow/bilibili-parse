@@ -1,7 +1,7 @@
 <?php
-$av = isset($_GET['av']) ? $_GET['av'] : '';
-$ep = isset($_GET['ep']) ? $_GET['ep'] : '';
-if ($av == '' && $ep == '') {
+$av = isset($_GET['av']) ? intval($_GET['av']) : 0;
+$ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
+if (!$av && !$ep) {
     include __DIR__ . '/public/welcome.html';
     exit;
 }
@@ -13,8 +13,8 @@ if ($otype == 'dplayer') {
     exit;
 }
 
-$p = isset($_GET['p']) ? $_GET['p'] : 1;
-$q = isset($_GET['q']) ? $_GET['q'] : 32;
+$p = isset($_GET['p']) ? intval($_GET['p']) : 1;
+$q = isset($_GET['q']) ? intval($_GET['q']) : 32;
 $type = isset($_GET['type']) ? $_GET['type'] : 'video';
 $use_dash = isset($_GET['dash']) ? true : false;
 
@@ -38,17 +38,25 @@ header('Access-Control-Allow-Methods: GET');
 if ($use_dash) {
     $bp->dash();
     $name = $type == 'bangumi' ? 'result' : 'data';
+    //echo $bp->video();exit;
     $dash_data = json_decode($bp->video(), true)[0][$name]['dash'];
-    $video_url = $dash_data['video'][0]['baseUrl'];
-    /*foreach ($videos as $video) {
-        $video[''];
-    }*/
+    $video_data = $dash_data['video'];
+    $index = 0;
+    foreach ($video_data as $i => $video) {
+        if ($video['id'] == $q) {
+            $index = $i;
+            break;
+        }
+    }
+    $video_url = $video_data[$index]['baseUrl'];
+    $quality = $video_data[$index]['id'];
     $audio_url = $dash_data['audio'][0]['baseUrl'];
     header('Content-type: application/json; charset=utf-8;');
     echo json_encode(array(
-        'code'  => 0,
-        'video' => $video_url,
-        'audio' => $audio_url
+        'code'    => 0,
+        'quality' => $quality,
+        'video'   => $video_url,
+        'audio'   => $audio_url
     ));
     exit;
 }
