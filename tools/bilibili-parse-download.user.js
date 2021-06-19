@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         bilibili视频下载
-// @version      0.5.0
+// @version      0.5.1
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @copyright    2021, injahow (https://github.com/injahow)
@@ -237,10 +237,10 @@
 
         // 获取用户状态
         if (window.__BILI_USER_INFO__) {
-            //is_login = window.__BILI_USER_INFO__.isLogin;
+            is_login = window.__BILI_USER_INFO__.isLogin;
             vip_status = window.__BILI_USER_INFO__.vipStatus;
         } else if (window.__BiliUser__) {
-            //is_login = window.__BiliUser__.isLogin;
+            is_login = window.__BiliUser__.isLogin;
             vip_status = window.__BiliUser__.cache.data.vipStatus;
         } else {
             is_login = false;
