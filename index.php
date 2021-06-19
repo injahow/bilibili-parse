@@ -36,10 +36,19 @@ header('Access-Control-Allow-Methods: GET');
 
 // dash
 if ($use_dash) {
+    header('Content-type: application/json; charset=utf-8;');
     $bp->dash();
     $name = $type == 'bangumi' ? 'result' : 'data';
     //echo $bp->video();exit;
     $dash_data = json_decode($bp->video(), true)[0][$name]['dash'];
+    if (!$dash_data) {
+        echo json_encode(array(
+            'code' => 10001,
+            'result' => 'error',
+            'message' => 'Invalid cid parameter.'
+        ));
+        exit;
+    }
     $video_data = $dash_data['video'];
     $index = 0;
     foreach ($video_data as $i => $video) {
@@ -51,7 +60,6 @@ if ($use_dash) {
     $video_url = $video_data[$index]['baseUrl'];
     $quality = $video_data[$index]['id'];
     $audio_url = $dash_data['audio'][0]['baseUrl'];
-    header('Content-type: application/json; charset=utf-8;');
     echo json_encode(array(
         'code'    => 0,
         'quality' => $quality,

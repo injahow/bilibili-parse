@@ -128,6 +128,8 @@ class Bilibili
             return './cache/cid/' . $this->cid . '_' . $this->quality  . ($this->dash ? '_dash' : '') . '.json';
         } elseif ($this->epid != '') {
             return './cache/epid/' . $this->epid . '_' . $this->quality . ($this->dash ? '_dash' : '') . '.json';
+        } else {
+            return './cache/cid/_' . ($this->dash ? '_dash' : '') . '.json';
         }
     }
 
