@@ -102,7 +102,7 @@
                 !my_dplayer.paused && my_dplayer_2.play();
             });
             my_dplayer.on('timeupdate', function () {
-                if (Math.abs(my_dplayer.video.currentTime - my_dplayer_2.video.currentTime) < 1) {
+                if (Math.abs(my_dplayer.video.currentTime - my_dplayer_2.video.currentTime) > 1) {
                     my_dplayer_2.seek(my_dplayer.video.currentTime);
                 }
                 !my_dplayer.paused && my_dplayer_2.play();
