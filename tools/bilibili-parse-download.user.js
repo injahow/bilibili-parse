@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.5.3
+// @version      0.5.4
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -28,6 +28,7 @@
     let aid_temp = '', p_temp = '', q_temp = '';
     let flag_name = '', need_vip = false, vip_need_pay = false;
     let is_login = false, vip_status = 0;
+
     function request_danmaku(options, _cid) {
         $.ajax({
             url: `https://api.bilibili.com/x/v1/dm/list.so?oid=${_cid}`,
@@ -64,7 +65,6 @@
         } else {
             $('#bilibili-player').html('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
         }
-        USE_DASH && $('#bilibiliPlayer').before(`<div id="my_dplayer_2" style="display:none"></div>`);
         $('#danmukuBox').hide();//隐藏弹幕列表
         !!$('#player_mask_module')[0] && $('#player_mask_module').hide();
         window.my_dplayer = new DPlayer({
@@ -85,6 +85,7 @@
             }
         });
         if (USE_DASH && url_2 && url_2 !== '#') {
+            $('body').before('<div id="my_dplayer_2" style="display:none"></div>');
             window.my_dplayer_2 = new DPlayer({
                 container: $('#my_dplayer_2')[0],
                 mutex: false,
