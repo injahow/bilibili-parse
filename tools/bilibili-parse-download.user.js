@@ -1,26 +1,28 @@
 // ==UserScript==
 // @name         bilibili视频下载
-// @version      0.5.1
+// @namespace    https://github.com/injahow
+// @version      0.5.2
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
+// @homepage     https://github.com/injahow/bilibili-parse
+// @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
 // @copyright    2021, injahow (https://github.com/injahow)
 // @match        *://www.bilibili.com/video/av*
 // @match        *://www.bilibili.com/video/BV*
 // @match        *://www.bilibili.com/bangumi/play/ep*
 // @match        *://www.bilibili.com/bangumi/play/ss*
-// @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
-// @downloadURL  https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
-// @homepage     https://github.com/injahow/bilibili-parse
-// @license      MIT
-// @grant        none
 // @require      https://static.hdslb.com/js/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js
 // @require      https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js
+// @license      MIT
+// @grant        none
 // ==/UserScript==
 /* globals $, DPlayer waitForKeyElements */
 (function () {
     'use strict';
-    const USE_DASH = false; // 使用DASH视频源（音视频分离，拖拽进度条不会卡死，下载可能失败）
+    // 修改 USE_DASH true | false
+    const USE_DASH = false; // 使用DASH视频源（音视频分离，避免拖拽进度条卡死，下载可能失败）
+
     let aid = '', p = '', q = '', cid = '', epid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
     let flag_name = '', need_vip = false, vip_need_pay = false;
@@ -48,7 +50,7 @@
                     options.success(danmaku_data);
                 }
             },
-            error: function (error) {
+            error: function () {
                 options.error('弹幕请求异常');
             }
         });
@@ -61,7 +63,7 @@
         } else {
             $('#bilibili-player').html('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
         }
-        USE_DASH && $('#bilibiliPlayer').before(`</div><div id="my_dplayer_2" download="${cid+'-'+q}.mp4" style="display:none"></div>`);
+        USE_DASH && $('#bilibiliPlayer').before(`<div id="my_dplayer_2" style="display:none"></div>`);
         $('#danmukuBox').hide();//隐藏弹幕列表
         !!$('#player_mask_module')[0] && $('#player_mask_module').hide();
         window.my_dplayer = new DPlayer({
@@ -123,7 +125,7 @@
     }
 
     function get_video_status() {
-        let location_href = window.location.href;
+        const location_href = window.location.href;
         if (location_href.match(/bilibili.com\/bangumi\/play\/ep/)) {
             flag_name = 'ep';
             need_vip = window.__INITIAL_STATE__.epInfo.badge === '会员';
@@ -158,10 +160,17 @@
     function refresh() {
         console.log('refresh...');
         !!('#video_download')[0] && $('#video_download').hide();
+        if (USE_DASH && !!('#video_download_2')[0]) { $('#video_download_2').hide(); }
+
         if (window.my_dplayer) {
             console.log('销毁dplayer');
             window.my_dplayer.destroy();
             window.my_dplayer = null;
+            if (USE_DASH) {
+                window.my_dplayer_2.destroy();
+                window.my_dplayer_2 = null;
+                $('#my_dplayer_2').remove();
+            }
             $('#my_dplayer').remove();
             !!$('#bilibiliPlayer')[0] && $('#bilibiliPlayer').show();
             !$('#bilibiliPlayer')[0] && $('#player_mask_module').show();
@@ -279,7 +288,7 @@
         if (flag_name === 'ep' || flag_name === 'ss') {
             type = 'bangumi';
             epid = window.__INITIAL_STATE__.epInfo.id;
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&ep=${epid}&q=${q}&otype=url&type=${type}` + (USE_DASH ? '&dash' : '');
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&ep=${epid}&otype=url&type=${type}` + (USE_DASH ? '&dash' : '');
         } else if (flag_name === 'av' || flag_name === 'bv') {
             type = 'video';
             api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}` + (USE_DASH ? '&dash' : '');
@@ -296,7 +305,7 @@
                         $('#video_url').attr('href', url);
                         $('#video_url_2').attr('href', url_2);
                         $('#video_download').show();
-                        USE_DASH && $('#video_download_2').show();
+                        $('#video_download_2').show();
                         if (!is_login || (is_login && vip_status === 0 && need_vip)) {
                             replace_player(url, url_2);
                         }
