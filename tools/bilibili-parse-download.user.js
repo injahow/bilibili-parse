@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.5.2
+// @version      0.5.3
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
-// @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
 // @copyright    2021, injahow (https://github.com/injahow)
+// @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
+// @downloadURL  https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
 // @match        *://www.bilibili.com/video/av*
 // @match        *://www.bilibili.com/video/BV*
 // @match        *://www.bilibili.com/bangumi/play/ep*
@@ -20,7 +21,7 @@
 /* globals $, DPlayer waitForKeyElements */
 (function () {
     'use strict';
-    // 修改 USE_DASH true | false
+    // 修改 USE_DASH [true|false]
     const USE_DASH = false; // 使用DASH视频源（音视频分离，避免拖拽进度条卡死，下载可能失败）
 
     let aid = '', p = '', q = '', cid = '', epid = '';
@@ -101,7 +102,9 @@
                 !my_dplayer.paused && my_dplayer_2.play();
             });
             my_dplayer.on('timeupdate', function () {
-                my_dplayer_2.paused && my_dplayer_2.pause();
+                if (Math.abs(my_dplayer.video.currentTime - my_dplayer_2.video.currentTime) < 1) {
+                    my_dplayer_2.seek(my_dplayer.video.currentTime);
+                }
                 !my_dplayer.paused && my_dplayer_2.play();
                 my_dplayer_2.speed(my_dplayer.video.playbackRate);
             });
