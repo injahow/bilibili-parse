@@ -6,15 +6,14 @@
 
 - 这是参考 [you-get](https://github.com/soimort/you-get) 创建的 bilibili 视频解析 API
 
-| 参数名 |    含义    | 默认 |       可选       |
-| :----: | :--------: | :--: | :--------------: |
-|   av   |  视频编号  |      |        -         |
-|   ep   |  剧集编号  |      |        -         |
-|   p    |  视频集数  |  1   |       >=1        |
-|   q    | 视频清晰度 |  32  |   16/32/64/80    |
-| otype  |  输出格式  | json | json/url/dplayer |
-|  type  |  视频类型  | video|   video/bangumi  |
-
+| 参数名 |    含义    | 默认  |       可选       |
+| :----: | :--------: | :---: | :--------------: |
+|   av   |  视频编号  |       |        -         |
+|   ep   |  剧集编号  |       |        -         |
+|   p    |  视频集数  |   1   |       >=1        |
+|   q    | 视频清晰度 |  32   |   16/32/64/80    |
+| otype  |  输出格式  | json  | json/url/dplayer |
+|  type  |  视频类型  | video |  video/bangumi   |
 
 ## Demo
 
