@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.5.4
+// @version      0.5.5
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -82,10 +82,20 @@
                 send: function (options) {
                     options.error('此脚本无法将弹幕同步到云端！');
                 }
-            }
+            },
+            contextmenu: [
+                {
+                    text: '脚本信息',
+                    link: 'https://github.com/injahow/bilibili-parse'
+                },
+                {
+                    text: '脚本作者',
+                    link: 'https://injahow.com'
+                }
+            ]
         });
         if (USE_DASH && url_2 && url_2 !== '#') {
-            $('body').before('<div id="my_dplayer_2" style="display:none"></div>');
+            $('body').append('<div id="my_dplayer_2" style="display:none"></div>');
             window.my_dplayer_2 = new DPlayer({
                 container: $('#my_dplayer_2')[0],
                 mutex: false,
@@ -107,11 +117,10 @@
                     my_dplayer_2.seek(my_dplayer.video.currentTime);
                 }
                 !my_dplayer.paused && my_dplayer_2.play();
-                my_dplayer_2.speed(my_dplayer.video.playbackRate);
             });
             my_dplayer.on('seeking', function () {
                 my_dplayer_2.pause();
-                my_dplayer_2.seek(my_dplayer.video.currentTime)
+                my_dplayer_2.seek(my_dplayer.video.currentTime);
             });
             my_dplayer.on('waiting', function () {
                 my_dplayer_2.pause();
@@ -164,8 +173,9 @@
     function refresh() {
         console.log('refresh...');
         !!('#video_download')[0] && $('#video_download').hide();
-        if (USE_DASH && !!('#video_download_2')[0]) { $('#video_download_2').hide(); }
-
+        if (USE_DASH) {
+            !!('#video_download_2')[0] && $('#video_download_2').hide();
+        }
         if (window.my_dplayer) {
             console.log('销毁dplayer');
             window.my_dplayer.destroy();
@@ -185,7 +195,7 @@
         cid = ids.cid;
     }
 
-    $('body').append('<a id="video_url" style="display:none" target="_blank" href="#"></a>');
+    $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     USE_DASH && $('body').append('<a id="video_url_2" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
 
     // 暂且延迟处理...
@@ -204,7 +214,7 @@
                 '<div id="toolbar_module_2" class="tool-bar clearfix report-wrap-module report-scroll-module media-info" scrollshow="true">' +
                 '<div id="bilibili_parse" class="like-info"><i class="iconfont icon-customer-serv"></i><span>请求地址</span></div>' +
                 '<div id="video_download" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>' +
-                (USE_DASH ? '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>' : '') +
+                (USE_DASH ? '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载音频</span></div>' : '') +
                 '</div>';
             $("#toolbar_module").after(my_toolbar);
         }
@@ -242,7 +252,7 @@
         if (!!$('li.bui-select-item.bui-select-item-active').attr('data-value')) {
             q = $('li.bui-select-item.bui-select-item-active').attr('data-value');
             if (q === '0') {
-                let q_max = $('.bui-select-item')[0].dataset.value;
+                const q_max = $('.bui-select-item')[0].dataset.value;
                 q = q_max > 80 ? 80 : q_max;
             }
         }
@@ -261,7 +271,7 @@
         }
         if (!is_login || (is_login && vip_status === 0 && need_vip)) {
             if (!!$('.bui-select-item')[0]) {
-                let q_max = $('.bui-select-item')[0].dataset.value;
+                const q_max = $('.bui-select-item')[0].dataset.value;
                 q = q_max > 80 ? 80 : q_max;
             } else {
                 q = 80;
@@ -273,7 +283,7 @@
         if (aid === aid_temp && p === p_temp && q === q_temp) {
             console.log('重复请求');
             const url = $('#video_url').attr('href');
-            const url_2 = USE_DASH ? $('#video_url_2').attr('href') : '#';
+            const url_2 = $('#video_url_2').attr('href');
             if (url && url !== '#') {
                 $('#video_download').show();
                 if (!is_login || (is_login && vip_status === 0 && need_vip)) {
@@ -292,57 +302,36 @@
         if (flag_name === 'ep' || flag_name === 'ss') {
             type = 'bangumi';
             epid = window.__INITIAL_STATE__.epInfo.id;
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&ep=${epid}&otype=url&type=${type}` + (USE_DASH ? '&dash' : '');
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&ep=${epid}&type=${type}&otype=json` + (USE_DASH ? '&dash' : '');
         } else if (flag_name === 'av' || flag_name === 'bv') {
             type = 'video';
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&otype=url&type=${type}` + (USE_DASH ? '&dash' : '');
+            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&type=${type}&otype=json` + (USE_DASH ? '&dash' : '');
         }
-        if (USE_DASH) {
-            $.ajax({
-                url: api_url,
-                dataType: 'json',
-                success: function (result) {
-                    if (result.code === 0) {
-                        console.log('url获取成功');
-                        const url = result.video.replace(/^https?\:\/\//i, 'https://');
-                        const url_2 = result.audio.replace(/^https?\:\/\//i, 'https://');
-                        $('#video_url').attr('href', url);
+        $.ajax({
+            url: api_url,
+            dataType: 'json',
+            success: function (result) {
+                if (!result.code) {
+                    console.log('url获取成功');
+                    const url = USE_DASH ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
+                    const url_2 = USE_DASH ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
+                    $('#video_url').attr('href', url);
+                    $('#video_download').show();
+                    if (USE_DASH) {
                         $('#video_url_2').attr('href', url_2);
-                        $('#video_download').show();
                         $('#video_download_2').show();
-                        if (!is_login || (is_login && vip_status === 0 && need_vip)) {
-                            replace_player(url, url_2);
-                        }
-                    } else {
-                        console.log('url获取失败');
                     }
-                },
-                error: function (error) {
-                    console.log('api请求异常', error);
-                }
-            });
-        } else {
-            $.ajax({
-                url: api_url,
-                dataType: 'text',
-                success: function (result) {
-                    if (result !== '') {
-                        console.log('url获取成功');
-                        const url = result.replace(/^https?\:\/\//i, 'https://');
-                        $('#video_url').attr('href', url);
-                        $('#video_download').show();
-                        if (!is_login || (is_login && vip_status === 0 && need_vip)) {
-                            replace_player(url);
-                        }
-                    } else {
-                        console.log('url获取失败');
+                    if (!is_login || (is_login && vip_status === 0 && need_vip)) {
+                        replace_player(url, url_2);
                     }
-                },
-                error: function (error) {
-                    console.log('api请求异常', error);
+                } else {
+                    console.log('url获取失败');
                 }
-            });
-        }
+            },
+            error: function (error) {
+                console.log('api请求异常', error);
+            }
+        });
     });
 
     // 监听p
@@ -356,7 +345,6 @@
         if (!$(this).find('.cursor')) {
             refresh();
         }
-
     });
 
     // 监听q
