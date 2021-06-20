@@ -71,7 +71,27 @@ if ($use_dash) {
 
 if ($otype == 'json') {
     header('Content-type: application/json; charset=utf-8;');
-    echo $bp->video();
+    //echo $bp->video();exit;
+    $data = json_decode($bp->video(), true)[0];
+    if($type == 'bangumi'){
+        $data = $data['result'];
+    }
+    $durl_data = $data['durl'][0];
+    if (!$durl_data) {
+        echo json_encode(array(
+            'code' => 10001,
+            'result' => 'error',
+            'message' => 'Invalid cid parameter.'
+        ));
+        exit;
+    }
+    $url = $durl_data['url'];
+    $quality = $data['quality'];
+    echo json_encode(array(
+        'code'    => 0,
+        'quality' => $quality,
+        'url'     => $url
+    ));
 } elseif ($otype == 'url') {
     header('Content-type: text/plain; charset=utf-8;');
     echo $bp->url();
