@@ -1,4 +1,8 @@
 <?php
+// allow cross
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET');
+
 $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
 if (!$av && !$ep) {
@@ -7,7 +11,8 @@ if (!$av && !$ep) {
 }
 
 $otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
-// ! 测试用
+
+// ! only for test
 if ($otype == 'dplayer') {
     include __DIR__ . '/public/dplayer.html';
     exit;
@@ -24,15 +29,11 @@ use Injahow\Bilibili;
 
 $bp = new Bilibili($type); //video or bangumi
 
-// 缓存 1h
+// cache 1h
 $bp->cache(true)->cache_time(3600);
 
 $bp->aid($av)->page($p)->quality($q);
 $bp->epid($ep);
-
-// 允许跨站
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
 
 // dash
 if ($use_dash) {
