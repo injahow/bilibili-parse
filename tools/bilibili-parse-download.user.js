@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.5.5
+// @version      0.5.6
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -21,8 +21,9 @@
 /* globals $, DPlayer waitForKeyElements */
 (function () {
     'use strict';
-    // 修改 USE_DASH [true|false]
-    const USE_DASH = false; // 使用DASH视频源（音视频分离，避免拖拽进度条卡死，下载可能失败）
+    // 修改 USE_DASH <true|false> 默认 false
+    // 使用DASH视频源（音视频分离，避免拖拽进度条卡死，下载可能失败，且部分浏览器存在播放异常）
+    const USE_DASH = false;
 
     let aid = '', p = '', q = '', cid = '', epid = '';
     let aid_temp = '', p_temp = '', q_temp = '';
@@ -114,6 +115,7 @@
             });
             my_dplayer.on('timeupdate', function () {
                 if (Math.abs(my_dplayer.video.currentTime - my_dplayer_2.video.currentTime) > 1) {
+                    my_dplayer_2.pause();
                     my_dplayer_2.seek(my_dplayer.video.currentTime);
                 }
                 !my_dplayer.paused && my_dplayer_2.play();
@@ -165,6 +167,7 @@
             _cid = window.__INITIAL_STATE__.epInfo.cid;
         } else if (flag_name === 'av' || flag_name === 'bv') {
             _aid = window.__INITIAL_STATE__.videoData.aid;
+            // 只更新 window.cid ?
             _cid = window.__INITIAL_STATE__.videoData.cid;
         }
         return { aid: _aid, cid: _cid }
@@ -345,6 +348,14 @@
         if (!$(this).find('.cursor')) {
             refresh();
         }
+    });
+
+    $('body').on('click', 'button.bilibili-player-iconfont-next', function () {
+        refresh();
+    });
+
+    !!$('video[crossorigin="anonymous"]')[0] && ($('video[crossorigin="anonymous"]')[0].onended = function (){
+        refresh();
     });
 
     // 监听q
