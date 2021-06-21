@@ -1,5 +1,5 @@
 <?php
-// ! 仅用于开发测试
+// ! only for test
 $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
 if (!$av) exit;
 
@@ -12,7 +12,7 @@ use Injahow\Bilibili;
 
 $bp = new Bilibili('video');
 
-// 缓存 1h
+// cache 1h
 $bp->cache(true)->cache_time(3600);
 
 $bp->aid($av)->page($p)->quality($q);
@@ -28,7 +28,7 @@ curl_setopt($curl, CURLOPT_TIMEOUT, 20);
 curl_setopt($curl, CURLOPT_ENCODING, 'gzip');
 curl_setopt($curl, CURLOPT_IPRESOLVE, 1);
 curl_setopt($curl, CURLOPT_REFERER, 'https://www.bilibili.com');
-// !输出到页面
+// ! out to page
 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 0);
 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
 curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
