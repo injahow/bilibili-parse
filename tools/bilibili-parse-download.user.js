@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.5.7
+// @version      0.6.0
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -173,6 +173,28 @@
         return { aid: _aid, cid: _cid }
     }
 
+    function get_quality() {
+        let _q = 0, _q_max = 0;
+        if (!!parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'))) {
+            // bangumi?
+            console.log('1');
+            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
+            _q_max = parseInt($('li.bui-select-item')[0].dataset.value);
+        } else if (!!parseInt($('li.squirtle-select-item.active').attr('data-value'))) {
+            // video?
+            console.log('2');
+            _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
+            _q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
+        }
+        if (_q === 0) {
+            _q = _q_max > 80 ? 80 : _q_max;
+        }
+        console.log('q', _q, 'q_max', _q_max);
+        _q = _q || 80;
+        _q_max = _q_max || 80;
+        return { q: _q, q_max: _q_max }
+    }
+
     function refresh() {
         console.log('refresh...');
         !!('#video_download')[0] && $('#video_download').hide();
@@ -252,20 +274,7 @@
         p = p || 1;
 
         // 获取视频分辨率参数q
-        if (!!$('li.bui-select-item.bui-select-item-active').attr('data-value')) {
-            q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
-            if (q === 0) {
-                const q_max = parseInt($('li.bui-select-item')[0].dataset.value);
-                q = q_max > 80 ? 80 : q_max;
-            }
-        } else if(!!$('li.squirtle-select-item.active').attr('data-value')) {
-            q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
-            if (q === 0) {
-                const q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
-                q = q_max > 80 ? 80 : q_max;
-            }
-        }
-        q = q || 80;
+        q = get_quality().q;
 
         // 获取用户状态
         if (window.__BILI_USER_INFO__) {
@@ -279,12 +288,8 @@
             vip_status = 0;
         }
         if (!is_login || (is_login && vip_status === 0 && need_vip)) {
-            if (!!$('.bui-select-item')[0]) {
-                const q_max = $('.bui-select-item')[0].dataset.value;
-                q = q_max > 80 ? 80 : q_max;
-            } else {
-                q = 80;
-            }
+            const q_max = get_quality().q_max;
+            q = q_max > 80 ? 80 : q_max;
             // 暂停视频准备换源
             !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         }
@@ -360,7 +365,7 @@
         refresh();
     });
 
-    !!$('video[crossorigin="anonymous"]')[0] && ($('video[crossorigin="anonymous"]')[0].onended = function (){
+    !!$('video[crossorigin="anonymous"]')[0] && ($('video[crossorigin="anonymous"]')[0].onended = function () {
         refresh();
     });
 
