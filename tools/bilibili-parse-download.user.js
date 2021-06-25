@@ -255,13 +255,13 @@
         if (!!$('li.bui-select-item.bui-select-item-active').attr('data-value')) {
             q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
             if (q === 0) {
-                const q_max = parseInt($('.bui-select-item')[0].dataset.value);
+                const q_max = parseInt($('li.bui-select-item')[0].dataset.value);
                 q = q_max > 80 ? 80 : q_max;
             }
         } else if(!!$('li.squirtle-select-item.active').attr('data-value')) {
             q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
             if (q === 0) {
-                const q_max = parseInt($('.squirtle-select-item')[0].dataset.value);
+                const q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
                 q = q_max > 80 ? 80 : q_max;
             }
         }
