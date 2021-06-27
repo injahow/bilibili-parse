@@ -25,8 +25,8 @@
     // 使用DASH视频源（音视频分离，避免拖拽进度条卡死，下载可能失败，且部分浏览器存在播放异常）
     const USE_DASH = false;
 
-    let aid = '', p = '', q = '', cid = '', epid = '';
-    let aid_temp = '', p_temp = '', q_temp = '';
+    let aid, p, q, cid, epid;
+    let aid_temp, p_temp, q_temp;
     let flag_name = '', need_vip = false, vip_need_pay = false;
     let is_login = false, vip_status = 0;
 
@@ -37,7 +37,7 @@
             success: function (result) {
                 const result_dom = $(result.replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, ''));
                 if (!result_dom.find('d')[0]) {
-                    options.error('弹幕请求失败');
+                    options.error('弹幕获取失败');
                 } else {
                     const danmaku_data = result_dom.find('d').map((i, el) => {
                         const item = $(el);
@@ -118,6 +118,7 @@
                     my_dplayer_2.pause();
                     my_dplayer_2.seek(my_dplayer.video.currentTime);
                 }
+                my_dplayer_2.video.muted = my_dplayer.video.muted;
                 !my_dplayer.paused && my_dplayer_2.play();
             });
             my_dplayer.on('seeking', function () {
@@ -176,20 +177,15 @@
     function get_quality() {
         let _q = 0, _q_max = 0;
         if (!!parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'))) {
-            // bangumi?
-            console.log('1');
             _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
             _q_max = parseInt($('li.bui-select-item')[0].dataset.value);
         } else if (!!parseInt($('li.squirtle-select-item.active').attr('data-value'))) {
-            // video?
-            console.log('2');
             _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
             _q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
         }
         if (_q === 0) {
             _q = _q_max > 80 ? 80 : _q_max;
         }
-        console.log('q', _q, 'q_max', _q_max);
         _q = _q || 80;
         _q_max = _q_max || 80;
         return { q: _q, q_max: _q_max }
@@ -274,7 +270,8 @@
         p = p || 1;
 
         // 获取视频分辨率参数q
-        q = get_quality().q;
+        const quality = get_quality()
+        q = quality.q;
 
         // 获取用户状态
         if (window.__BILI_USER_INFO__) {
@@ -288,8 +285,7 @@
             vip_status = 0;
         }
         if (!is_login || (is_login && vip_status === 0 && need_vip)) {
-            const q_max = get_quality().q_max;
-            q = q_max > 80 ? 80 : q_max;
+            q = quality.q_max > 80 ? 80 : quality.q_max;
             // 暂停视频准备换源
             !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         }
