@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.6.1
+// @version      0.6.2
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -36,8 +36,12 @@
             dataType: 'text',
             success: function (result) {
                 const result_dom = $(result.replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, ''));
-                if (!result_dom.find('d')[0]) {
+                if (!result_dom) {
                     options.error('弹幕获取失败');
+                    return;
+                }
+                if (!result_dom.find('d')[0]) {
+                    options.error('未发现弹幕');
                 } else {
                     const danmaku_data = result_dom.find('d').map((i, el) => {
                         const item = $(el);
@@ -118,7 +122,6 @@
                     my_dplayer_2.pause();
                     my_dplayer_2.seek(my_dplayer.video.currentTime);
                 }
-                my_dplayer_2.video.muted = my_dplayer.video.muted;
                 !my_dplayer.paused && my_dplayer_2.play();
             });
             my_dplayer.on('seeking', function () {
@@ -135,6 +138,7 @@
                 my_dplayer_2.speed(my_dplayer.video.playbackRate);
             });
             my_dplayer.on('volumechange', function () {
+                my_dplayer_2.video.muted = my_dplayer.video.muted;
                 my_dplayer_2.volume(my_dplayer.video.volume);
             });
         }
@@ -270,7 +274,7 @@
         p = p || 1;
 
         // 获取视频分辨率参数q
-        const quality = get_quality()
+        const quality = get_quality();
         q = quality.q;
 
         // 获取用户状态
@@ -321,7 +325,7 @@
             url: api_url,
             dataType: 'json',
             success: function (result) {
-                if (!result.code) {
+                if (result && result.code === 0) {
                     console.log('url获取成功');
                     const url = USE_DASH ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
                     const url_2 = USE_DASH ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
