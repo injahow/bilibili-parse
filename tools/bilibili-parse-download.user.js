@@ -68,7 +68,8 @@
             $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
             $('#bilibiliPlayer').hide();
         } else {
-            $('#bilibili-player').html('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
+            $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
+            $('#bilibili-player').hide();
         }
         $('#danmukuBox').hide();//隐藏弹幕列表
         !!$('#player_mask_module')[0] && $('#player_mask_module').hide();
@@ -205,14 +206,19 @@
             console.log('销毁dplayer');
             window.my_dplayer.destroy();
             window.my_dplayer = null;
+            $('#my_dplayer').remove();
             if (USE_DASH) {
                 window.my_dplayer_2.destroy();
                 window.my_dplayer_2 = null;
                 $('#my_dplayer_2').remove();
             }
-            $('#my_dplayer').remove();
-            !!$('#bilibiliPlayer')[0] && $('#bilibiliPlayer').show();
-            !$('#bilibiliPlayer')[0] && $('#player_mask_module').show();
+            // 恢复播放器
+            if (!!$('#bilibiliPlayer')[0]) {
+                $('#bilibiliPlayer').show();
+            } else {
+                $('#bilibili-player').show();
+            }
+            /*!!$('#player_mask_module')[0] && $('#player_mask_module').show();*/
         }
         // 更新cid和aid - 1
         const ids = get_all_id();
@@ -306,6 +312,8 @@
             }
             return;
         }
+        $('#video_url').attr('href', '#');
+        $('#video_url_2').attr('href', '#');
 
         aid_temp = aid;
         p_temp = p;
