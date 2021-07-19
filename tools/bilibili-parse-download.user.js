@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.6.3
+// @version      0.6.4
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -239,7 +239,7 @@
                 '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>' +
                 (USE_DASH ? '<span id="video_download_2" style="display:none"><i class="van-icon-download"></i>下载音频</span>' : '') +
                 '</div></div>';
-            $("#arc_toolbar_report").after(my_toolbar);
+            $('#arc_toolbar_report').after(my_toolbar);
         } else if (!!$('#toolbar_module')[0]) {
             my_toolbar =
                 '<div id="toolbar_module_2" class="tool-bar clearfix report-wrap-module report-scroll-module media-info" scrollshow="true">' +
@@ -247,7 +247,7 @@
                 '<div id="video_download" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>' +
                 (USE_DASH ? '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载音频</span></div>' : '') +
                 '</div>';
-            $("#toolbar_module").after(my_toolbar);
+            $('#toolbar_module').after(my_toolbar);
         }
     }, 3000);
 
@@ -271,7 +271,7 @@
             console.log('aid获取出错！');
         }
 
-        // 获取视频分页参数q
+        // 获取视频分页参数p
         if (flag_name === 'ep' || flag_name === 'ss') {
             p = window.__INITIAL_STATE__.epInfo.i;
         } else if (flag_name === 'av' || flag_name === 'bv') {
