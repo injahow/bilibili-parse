@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.7.1
+// @version      0.7.2
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -21,11 +21,6 @@
 /* globals $, DPlayer waitForKeyElements */
 (function () {
     'use strict';
-
-    // config
-    let base_api = 'https://api.injahow.cn/bparse/';
-    let format = 'flv';
-    let use_dash = false;
 
     let aid, p, q, cid, epid;
     let api_url, api_url_temp;
@@ -66,6 +61,7 @@
     }
 
     function replace_player(url, url_2) {
+        recover_player();
         if (!!$('#bilibiliPlayer')[0]) {
             $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
             $('#bilibiliPlayer').hide();
@@ -198,11 +194,7 @@
         return { q: _q, q_max: _q_max }
     }
 
-    function refresh() {
-        console.log('refresh...');
-        !!('#video_download')[0] && $('#video_download').hide();
-        !!('#video_download_2')[0] && $('#video_download_2').hide();
-
+    function recover_player() {
         if (window.my_dplayer) {
             console.log('销毁dplayer');
             window.my_dplayer.destroy();
@@ -221,6 +213,13 @@
             }
             /*!!$('#player_mask_module')[0] && $('#player_mask_module').show();*/
         }
+    }
+
+    function refresh() {
+        console.log('refresh...');
+        !!('#video_download')[0] && $('#video_download').hide();
+        !!('#video_download_2')[0] && $('#video_download_2').hide();
+        recover_player();
         // 更新cid和aid - 1
         const ids = get_all_id();
         aid = ids.aid;
@@ -248,6 +247,11 @@
             '</style>';
         $('body').append(config_html + config_css);
     }
+
+    // config
+    let base_api = 'https://api.injahow.cn/bparse/';
+    let format = 'flv';
+    let use_dash = false;
 
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     $('body').append('<a id="video_url_2" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
@@ -290,6 +294,7 @@
     });
 
     $('body').on('click', '#bilibili_parse', function () {
+
         // 刷新配置
         base_api = $("#base_api").val();
         format = $("#format option:selected").val();
@@ -305,15 +310,6 @@
             console.log('aid获取出错！');
         }
 
-        // 获取视频分页参数p
-        if (flag_name === 'ep' || flag_name === 'ss') {
-            p = window.__INITIAL_STATE__.epInfo.i;
-        } else if (flag_name === 'av' || flag_name === 'bv') {
-            p = window.__INITIAL_STATE__.p;
-        }
-        p = p || 1;
-
-        // 获取视频分辨率参数q
         const quality = get_quality();
         q = quality.q;
 
@@ -336,10 +332,12 @@
 
         let type;
         if (flag_name === 'ep' || flag_name === 'ss') {
+            p = window.__INITIAL_STATE__.epInfo.i || 1;
             type = 'bangumi';
             epid = window.__INITIAL_STATE__.epInfo.id;
             api_url = `${base_api}?av=${aid}&p=${p}&q=${q}&ep=${epid}&type=${type}&format=${format}&otype=json`;
         } else if (flag_name === 'av' || flag_name === 'bv') {
+            p = window.__INITIAL_STATE__.p || 1;
             type = 'video';
             api_url = `${base_api}?av=${aid}&p=${p}&q=${q}&type=${type}&format=${format}&otype=json`;
         }
@@ -396,9 +394,7 @@
     });
 
     $('body').on('click', 'li.ep-item', function () {
-        if (!$(this).find('.cursor')) {
-            refresh();
-        }
+        refresh();
     });
 
     $('body').on('click', 'button.bilibili-player-iconfont-next', function () {
