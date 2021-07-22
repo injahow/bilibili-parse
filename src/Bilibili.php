@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.2.0
+ * Version 0.2.1
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -146,8 +146,8 @@ class Bilibili
 
         if ($this->cache) {
             $data_obj = json_decode($data, true)[0];
-            if ($data_obj['code'] == 0) {
-                if ($this->format == 'flv'){
+            if (!isset($data_obj['code']) || $data_obj['code'] == 0) {
+                if ($this->format == 'flv') {
                     //flv更新quality参数，避免错误缓存
                     if ($this->type == 'video') {
                         $this->quality($data_obj['quality']);
@@ -167,17 +167,17 @@ class Bilibili
     private function getCacheFileName()
     {
         // ! mkdir './cache/*'
-        if ($this->cid != '') {
-            if ($this->format != 'flv')
-                return './cache/cid/' . $this->cid . '_' . $this->format . '.json';
-            return './cache/cid/' . $this->cid . '_' . $this->quality . '.json';
-        } elseif ($this->epid != '') {
-            if ($this->format != 'flv')
-                return './cache/epid/' . $this->epid . '_' . $this->format . '.json';
-            return './cache/epid/' . $this->epid . '_' . $this->quality . '.json';
-        } else {
+        if ($this->format != 'flv')
+            $suffix = $this->format;
+        else
+            $suffix = $this->quality;
+
+        if ($this->cid != '')
+            return './cache/cid/' . $this->cid . '_' . $suffix . '.json';
+        elseif ($this->epid != '')
+            return './cache/epid/' . $this->cid . '_' . $suffix . '.json';
+        else
             return './cache/cid/0' . '_' . $this->format . '.json';
-        }
     }
 
     private function bilibili_api()
