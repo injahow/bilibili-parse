@@ -20,7 +20,8 @@
 
 - [https://api.injahow.cn/bparse/?av=14661594&p=1&q=64&otype=json](https://api.injahow.cn/bparse/?av=14661594&p=1&q=64&otype=json)
 - [https://api.injahow.cn/bparse/?av=14661594&p=2&q=32&otype=url](https://api.injahow.cn/bparse/?av=14661594&p=2&q=32&otype=url)
-- [https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=dplayer](https://api.injahow.cn/bparse/?av=14661594&p=1&q=16&otype=dplayer)
+- [https://api.injahow.cn/bparse/?av=14661594&p=1&format=mp4&otype=json](https://api.injahow.cn/bparse/?av=14661594&p=1&format=mp4&otype=json)
+- [https://api.injahow.cn/bparse/?av=14661594&p=1&otype=dplayer](https://api.injahow.cn/bparse/?av=14661594&p=1&otype=dplayer)
 
 ## Tools
 

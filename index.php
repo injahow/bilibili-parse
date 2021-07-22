@@ -13,9 +13,9 @@ if (!$av && !$ep) {
 
 $otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
 
-// ! only for test
+// only for mp4
 if ($otype == 'dplayer') {
-    include __DIR__ . '/public/dplayer.html';
+    include __DIR__ . '/public/dplayer.php';
     exit;
 }
 
