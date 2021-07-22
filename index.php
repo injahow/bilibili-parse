@@ -5,6 +5,7 @@ header('Access-Control-Allow-Methods: GET');
 
 $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
+
 if (!$av && !$ep) {
     include __DIR__ . '/public/welcome.html';
     exit;
@@ -21,7 +22,7 @@ if ($otype == 'dplayer') {
 $p = isset($_GET['p']) ? intval($_GET['p']) : 1;
 $q = isset($_GET['q']) ? intval($_GET['q']) : 32;
 $type = isset($_GET['type']) ? $_GET['type'] : 'video';
-$use_dash = isset($_GET['dash']) ? true : false;
+$format = isset($_GET['format']) ? $_GET['format'] : 'flv';
 
 include  __DIR__ . '/src/Bilibili.php';
 
@@ -32,24 +33,21 @@ $bp = new Bilibili($type); //video or bangumi
 // cache 1h
 $bp->cache(true)->cache_time(3600);
 
-$bp->aid($av)->page($p)->quality($q);
 $bp->epid($ep);
+$bp->aid($av)->page($p)->quality($q)->format($format);
 
 // dash
-if ($use_dash) {
+if ($format == 'dash') {
     header('Content-type: application/json; charset=utf-8;');
-    $bp->dash();
     $name = $type == 'bangumi' ? 'result' : 'data';
-    //echo $bp->video();exit;
-    $dash_data = json_decode($bp->video(), true)[0][$name]['dash'];
-    if (!$dash_data) {
-        echo json_encode(array(
-            'code' => 10001,
-            'result' => 'error',
-            'message' => 'Invalid cid parameter.'
-        ));
+    //echo $bp->dash(true)->video();exit;
+    $dash_data = json_decode($bp->video(), true)[0];
+    if (isset($dash_data['code']) && $dash_data['code'] != 0) {
+        echo json_encode($dash_data);
         exit;
     }
+    $dash_data = $dash_data[$name]['dash'];
+
     $video_data = $dash_data['video'];
     $index = 0;
     foreach ($video_data as $i => $video) {
@@ -58,8 +56,8 @@ if ($use_dash) {
             break;
         }
     }
-    $video_url = $video_data[$index]['baseUrl'];
     $quality = $video_data[$index]['id'];
+    $video_url = $video_data[$index]['baseUrl'];
     $audio_url = $dash_data['audio'][0]['baseUrl'];
     echo json_encode(array(
         'code'    => 0,
@@ -70,30 +68,33 @@ if ($use_dash) {
     exit;
 }
 
+$data = json_decode($bp->video(), true)[0];
+//echo json_encode($data); exit;
+if (isset($data['code']) && $data['code'] != 0) {
+    echo json_encode($data);
+    exit;
+}
+
+if ($type == 'bangumi') {
+    $data = $data['result'];
+} else if ($format == 'mp4') {
+    $data = $data['data'];
+}
+
+$durl_data = $data['durl'][0];
+
+$url = $durl_data['url'];
+$quality = $data['quality'];
+$res = array(
+    'code'    => 0,
+    'quality' => $quality,
+    'url'     => $url
+);
+
 if ($otype == 'json') {
     header('Content-type: application/json; charset=utf-8;');
-    //echo $bp->video();exit;
-    $data = json_decode($bp->video(), true)[0];
-    if($type == 'bangumi'){
-        $data = $data['result'];
-    }
-    $durl_data = $data['durl'][0];
-    if (!$durl_data) {
-        echo json_encode(array(
-            'code' => 10001,
-            'result' => 'error',
-            'message' => 'Invalid cid parameter.'
-        ));
-        exit;
-    }
-    $url = $durl_data['url'];
-    $quality = $data['quality'];
-    echo json_encode(array(
-        'code'    => 0,
-        'quality' => $quality,
-        'url'     => $url
-    ));
+    echo json_encode($res);
 } elseif ($otype == 'url') {
     header('Content-type: text/plain; charset=utf-8;');
-    echo $bp->url();
+    echo $res['url'];
 }

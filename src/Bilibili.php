@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.1.3
+ * Version 0.2.0
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -17,12 +17,12 @@ class Bilibili
     public $aid;
     public $page = 1;
     public $quality = 32;
-    public $type;
+    public $type = 'video';
+    public $format = 'flv';
     public $epid;
     public $cid;
-
     public $fnval = 0; // 0-FLV 1-MP4 16-DASH
-    public $dash = false;
+
     public $cache = false;
     public $cache_time = 3600;
 
@@ -59,7 +59,7 @@ class Bilibili
 
     public function page($value)
     {
-        $this->page = $value >= 1 ? $value : 1;
+        $this->page = $value > 1 ? $value : 1;
 
         return $this;
     }
@@ -72,19 +72,21 @@ class Bilibili
     }
 
     /**
-     * 分辨率(112|1080P+)/(80->1080P)/(64|48->720P)/(32->480P)/(16->360P)/15?
+     * 分辨率(112|1080P+)/(80->1080P)/(74|64|48->720P)/(32->480P)/(16->360P)/15?
      */
     public function quality($value)
     {
-        $suppose = array(16, 32, 48, 64, 80, 112); // ...
-        $this->quality = in_array(intval($value), $suppose) ? intval($value) : 32;
+        $value = intval($value);
+        $suppose = array(16, 32, 48, 64, 74, 80, 112); // ...
+        $this->quality = in_array($value, $suppose) ? $value : 32;
 
         return $this;
     }
 
-    public function cookie($value)
+    public function format($value)
     {
-        $this->header['Cookie'] = $value;
+        $suppose = array('flv', 'dash', 'mp4');
+        $this->format = in_array($value, $suppose) ? $value : 'flv';
 
         return $this;
     }
@@ -104,9 +106,9 @@ class Bilibili
         return $this;
     }
 
-    public function dash($value = true)
+    public function cookie($value)
     {
-        $this->dash = $value;
+        $this->header['Cookie'] = $value;
 
         return $this;
     }
@@ -118,24 +120,8 @@ class Bilibili
         return $this;
     }
 
-    /**
-     * ? 待处理
-     */
-    private function getCacheFileName()
-    {
-        // ! mkdir './cache/*'
-        if ($this->cid != '') {
-            return './cache/cid/' . $this->cid . '_' . $this->quality  . ($this->dash ? '_dash' : '') . '.json';
-        } elseif ($this->epid != '') {
-            return './cache/epid/' . $this->epid . '_' . $this->quality . ($this->dash ? '_dash' : '') . '.json';
-        } else {
-            return './cache/cid/_' . ($this->dash ? '_dash' : '') . '.json';
-        }
-    }
-
     public function video()
     {
-
         $this->setCid();
 
         $file_name = $this->getCacheFileName();
@@ -146,46 +132,80 @@ class Bilibili
         }
 
         if ($this->type == 'video') {
-            $api = $this->dash ? $this->bilibili_api() : $this->bilibili_video_api();
+            if ($this->format == 'dash') {
+                $api = $this->bilibili_api();
+            } else {
+                $api = $this->format == 'mp4' ? $this->bilibili_api(true) : $this->bilibili_video_api();
+            }
         } elseif ($this->type == 'bangumi') {
-            $this->fnval = $this->dash ? 16 : 0;
+            $this->fnval = $this->format == 'dash' ? 16 : 0;
             $api = $this->bilibili_bangumi_api();
-        } else {
-            return;
         }
 
         $data = $this->exec($api);
 
         if ($this->cache) {
-            //更新quality参数，避免错误缓存
-            if ($this->type == 'video') {
-                $this->quality(json_decode($data, true)[0]['quality']);
-            } elseif ($this->type == 'bangumi') {
-                $this->quality(json_decode($data, true)[0]['result']['quality']);
+            $data_obj = json_decode($data, true)[0];
+            if ($data_obj['code'] == 0) {
+                //更新quality参数，避免错误缓存
+                if ($this->type == 'video') {
+                    $this->quality($data_obj['quality']);
+                } elseif ($this->type == 'bangumi') {
+                    $this->quality($data_obj['result']['quality']);
+                }
+                $this->setCache($data);
             }
-            $this->setCache($data);
         }
         return $data;
+    }
+
+    /**
+     * ? 待处理
+     */
+    private function getCacheFileName()
+    {
+        // ! mkdir './cache/*'
+        if ($this->cid != '') {
+            if ($this->format != 'flv')
+                return './cache/cid/' . $this->cid . '_' . $this->format . '.json';
+            return './cache/cid/' . $this->cid . '_' . $this->quality . '.json';
+        } elseif ($this->epid != '') {
+            if ($this->format != 'flv')
+                return './cache/epid/' . $this->epid . '_' . $this->format . '.json';
+            return './cache/epid/' . $this->epid . '_' . $this->quality . '.json';
+        } else {
+            return './cache/cid/0' . '_' . $this->format . '.json';
+        }
     }
 
     private function bilibili_api()
     {
         $qn = 0;
-        return array(
+        $api = array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/x/player/playurl',
             'body'   => array(
                 'avid'  => $this->aid,
                 'cid'   => $this->cid,
                 'qn'    => $qn,
-                'type'  => '',
-                'otype' => 'json',
-                'fnver' => '0',
-                'fnval' => '16',
-                'fourk' => '1'
+                'type'  => $this->format == 'mp4' ? 'mp4' : '',
+                'otype' => 'json'
             ),
             'format' => ''
         );
+        if ($this->format == 'mp4') { // mp4
+            $api['body'] += array(
+                'platform'     => 'html5',
+                'high_quality' => 1
+            );
+        } else { // dash
+            $api['body'] += array(
+                'fnver' => 0,
+                'fnval' => 16,
+                'fourk' => 1
+            );
+        }
+        return $api;
     }
 
     private function bilibili_video_api()
@@ -232,7 +252,7 @@ class Bilibili
         );
     }
 
-    // 获取url
+    // !测试用
     public function url()
     {
         $data = $this->video();
@@ -266,20 +286,22 @@ class Bilibili
 
     private function setCid()
     {
-        if (!isset($this->aid)) exit;
-        $format = $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1);
+        if (!isset($this->aid)) return;
+        $api_format = $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1);
         $api = array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/x/web-interface/view',
             'body'   => array(
                 'aid' => $this->aid
             ),
-            'format' => $format
+            'format' => $api_format
         );
+        $res = json_decode($this->exec($api), true);
+        if (!isset($res[0])) return;
         if ($this->type == 'bangumi')
-            $this->cid = json_decode($this->exec($api), true)[0]['data']['cid'];
+            $this->cid = $res[0]['data']['cid'];
         else
-            $this->cid = json_decode($this->exec($api), true)[0]['cid'];
+            $this->cid = $res[0]['cid'];
     }
 
     private function setAppkey()

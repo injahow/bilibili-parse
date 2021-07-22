@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.6.4
+// @version      0.7.0
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -21,12 +21,14 @@
 /* globals $, DPlayer waitForKeyElements */
 (function () {
     'use strict';
-    // 修改 USE_DASH <true|false> 默认 false
-    // 使用DASH视频源（音视频分离，避免拖拽进度条卡死，下载可能失败，且部分浏览器存在播放异常）
-    const USE_DASH = false;
+
+    // config
+    let base_api = 'https://api.injahow.cn/bparse/';
+    let format = 'flv';
+    let use_dash = false;
 
     let aid, p, q, cid, epid;
-    let aid_temp, p_temp, q_temp;
+    let api_url, api_url_temp;
     let flag_name = '', need_vip = false, vip_need_pay = false;
     let is_login = false, vip_status = 0;
 
@@ -100,7 +102,7 @@
                 }
             ]
         });
-        if (USE_DASH && url_2 && url_2 !== '#') {
+        if (use_dash && url_2 && url_2 !== '#') {
             $('body').append('<div id="my_dplayer_2" style="display:none"></div>');
             window.my_dplayer_2 = new DPlayer({
                 container: $('#my_dplayer_2')[0],
@@ -199,15 +201,14 @@
     function refresh() {
         console.log('refresh...');
         !!('#video_download')[0] && $('#video_download').hide();
-        if (USE_DASH) {
-            !!('#video_download_2')[0] && $('#video_download_2').hide();
-        }
+        !!('#video_download_2')[0] && $('#video_download_2').hide();
+
         if (window.my_dplayer) {
             console.log('销毁dplayer');
             window.my_dplayer.destroy();
             window.my_dplayer = null;
             $('#my_dplayer').remove();
-            if (USE_DASH) {
+            if (window.my_dplayer_2) {
                 window.my_dplayer_2.destroy();
                 window.my_dplayer_2 = null;
                 $('#my_dplayer_2').remove();
@@ -226,8 +227,31 @@
         cid = ids.cid;
     }
 
+    function config_init() {
+        const config_html =
+            '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.5s;z-index:10000;cursor:pointer;">' +
+            '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
+            '<span style="font-size:20px"><b>bilibili视频下载 参数设置（未缓存刷新页面将重置设置）</b></span>' +
+            '<div style="margin:2% 0;"><label>请求地址：</label>' +
+            '<input id="base_api" value="http://localhost:3000/" style="width:50%;"><br>' +
+            '<span>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</span></div>' +
+            '<div style="margin:2% 0;"><label>视频格式：</label>' +
+            '<select name="format" id="format">' +
+            '<option value="flv" checked>FLV</option><option value="dash">DASH</option><option value="mp4">MP4</option>' +
+            '</select></div>' +
+            '<div style="text-align:right"><button class="setting-button" onclick="$(\'#my_config\').hide();$(\'#video_download\').hide();$(\'#video_download_2\').hide();">确定</button></div>' +
+            '</div></div>';
+        const config_css =
+            '<style>' +
+            '@keyframes settings-bg{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.7)}}' +
+            '.setting-button{width:120px;height:40px;border-width:0px;border-radius:3px;background:#1E90FF;cursor:pointer;outline:none;color: white;font-size:17px;}.setting-button:hover{background:#5599FF;}' +
+            '</style>';
+        $('body').append(config_html + config_css);
+    }
+
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
-    USE_DASH && $('body').append('<a id="video_url_2" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
+    $('body').append('<a id="video_url_2" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
+    config_init();
 
     // 暂且延迟处理...
     setTimeout(function () {
@@ -235,21 +259,27 @@
         if (!!$('#arc_toolbar_report')[0]) {
             my_toolbar =
                 '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true"><div class="ops">' +
+                '<span id="setting_btn"><i class="van-icon-general_addto_s"></i>脚本设置</span>' +
                 '<span id="bilibili_parse"><i class="van-icon-floatwindow_custome"></i>请求地址</span>' +
                 '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>' +
-                (USE_DASH ? '<span id="video_download_2" style="display:none"><i class="van-icon-download"></i>下载音频</span>' : '') +
+                '<span id="video_download_2" style="display:none"><i class="van-icon-download"></i>下载音频</span>' +
                 '</div></div>';
             $('#arc_toolbar_report').after(my_toolbar);
         } else if (!!$('#toolbar_module')[0]) {
             my_toolbar =
                 '<div id="toolbar_module_2" class="tool-bar clearfix report-wrap-module report-scroll-module media-info" scrollshow="true">' +
+                '<div id="setting_btn" class="like-info"><i class="iconfont icon-add"></i><span>脚本设置</span></div>' +
                 '<div id="bilibili_parse" class="like-info"><i class="iconfont icon-customer-serv"></i><span>请求地址</span></div>' +
                 '<div id="video_download" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>' +
-                (USE_DASH ? '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载音频</span></div>' : '') +
+                '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载音频</span></div>' +
                 '</div>';
             $('#toolbar_module').after(my_toolbar);
         }
     }, 3000);
+
+    $('body').on('click', '#setting_btn', function () {
+        $('#my_config').show();
+    });
 
     $('body').on('click', '#video_download', function () {
         $('#video_url')[0].click();
@@ -260,6 +290,10 @@
     });
 
     $('body').on('click', '#bilibili_parse', function () {
+        // 刷新配置
+        base_api = $("#base_api").val();
+        format = $("#format option:selected").val();
+        use_dash = format === 'dash';
         get_video_status();
 
         // 更新cid和aid - 2
@@ -300,7 +334,17 @@
             !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         }
 
-        if (aid === aid_temp && p === p_temp && q === q_temp) {
+        let type;
+        if (flag_name === 'ep' || flag_name === 'ss') {
+            type = 'bangumi';
+            epid = window.__INITIAL_STATE__.epInfo.id;
+            api_url = `${base_api}?av=${aid}&p=${p}&q=${q}&ep=${epid}&type=${type}&format=${format}&otype=json`;
+        } else if (flag_name === 'av' || flag_name === 'bv') {
+            type = 'video';
+            api_url = `${base_api}?av=${aid}&p=${p}&q=${q}&type=${type}&format=${format}&otype=json`;
+        }
+
+        if (api_url === api_url_temp) {
             console.log('重复请求');
             const url = $('#video_url').attr('href');
             const url_2 = $('#video_url_2').attr('href');
@@ -314,32 +358,20 @@
         }
         $('#video_url').attr('href', '#');
         $('#video_url_2').attr('href', '#');
-
-        aid_temp = aid;
-        p_temp = p;
-        q_temp = q;
+        api_url_temp = api_url;
 
         console.log('开始解析');
-        let type, api_url;
-        if (flag_name === 'ep' || flag_name === 'ss') {
-            type = 'bangumi';
-            epid = window.__INITIAL_STATE__.epInfo.id;
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&ep=${epid}&type=${type}&otype=json` + (USE_DASH ? '&dash' : '');
-        } else if (flag_name === 'av' || flag_name === 'bv') {
-            type = 'video';
-            api_url = `https://api.injahow.cn/bparse/?av=${aid}&p=${p}&q=${q}&type=${type}&otype=json` + (USE_DASH ? '&dash' : '');
-        }
         $.ajax({
             url: api_url,
             dataType: 'json',
             success: function (result) {
                 if (result && result.code === 0) {
                     console.log('url获取成功');
-                    const url = USE_DASH ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
-                    const url_2 = USE_DASH ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
+                    const url = use_dash ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
+                    const url_2 = use_dash ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
                     $('#video_url').attr('href', url);
                     $('#video_download').show();
-                    if (USE_DASH) {
+                    if (use_dash) {
                         $('#video_url_2').attr('href', url_2);
                         $('#video_download_2').show();
                     }
