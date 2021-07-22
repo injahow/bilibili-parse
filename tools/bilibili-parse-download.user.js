@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.7.0
+// @version      0.7.1
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -233,7 +233,7 @@
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
             '<span style="font-size:20px"><b>bilibili视频下载 参数设置（未缓存刷新页面将重置设置）</b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
-            '<input id="base_api" value="http://localhost:3000/" style="width:50%;"><br>' +
+            '<input id="base_api" value="https://api.injahow.cn/bparse/" style="width:50%;"><br>' +
             '<span>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</span></div>' +
             '<div style="margin:2% 0;"><label>视频格式：</label>' +
             '<select name="format" id="format">' +
