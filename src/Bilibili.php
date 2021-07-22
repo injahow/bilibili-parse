@@ -147,11 +147,13 @@ class Bilibili
         if ($this->cache) {
             $data_obj = json_decode($data, true)[0];
             if ($data_obj['code'] == 0) {
-                //更新quality参数，避免错误缓存
-                if ($this->type == 'video') {
-                    $this->quality($data_obj['quality']);
-                } elseif ($this->type == 'bangumi') {
-                    $this->quality($data_obj['result']['quality']);
+                if ($this->format == 'flv'){
+                    //flv更新quality参数，避免错误缓存
+                    if ($this->type == 'video') {
+                        $this->quality($data_obj['quality']);
+                    } elseif ($this->type == 'bangumi') {
+                        $this->quality($data_obj['result']['quality']);
+                    }
                 }
                 $this->setCache($data);
             }
