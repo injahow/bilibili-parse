@@ -13,7 +13,7 @@
 |   p    |  视频集数  |   1   |       >=1        |
 |   q    | 视频清晰度 |  32   |   16/32/64/80    |
 |  type  |  视频类型  | video |  video/bangumi   |
-| format |  文件格式  |  flv  |   flv/dash/mp4   |
+| format |  视频格式  |  flv  |   flv/dash/mp4   |
 | otype  |  输出格式  | json  | json/url/dplayer |
 
 ## Demo
