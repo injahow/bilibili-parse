@@ -33,6 +33,8 @@ $bp = new Bilibili($type); //video or bangumi
 
 // cache 1h
 $bp->cache(true)->cache_time(3600);
+// need config apcu
+// $bp->cache(true, 'apcu')->cache_time(3600);
 
 $bp->epid($ep);
 $bp->aid($av)->page($p)->quality($q)->format($format);
@@ -40,62 +42,26 @@ $bp->aid($av)->page($p)->quality($q)->format($format);
 // dash
 if ($format == 'dash') {
     header('Content-type: application/json; charset=utf-8;');
-    $name = $type == 'bangumi' ? 'result' : 'data';
-    //echo $bp->dash(true)->video();exit;
-    $dash_data = json_decode($bp->video(), true)[0];
-    if (isset($dash_data['code']) && $dash_data['code'] != 0) {
-        echo json_encode($dash_data);
-        exit;
-    }
-    $dash_data = $dash_data[$name]['dash'];
-
-    $video_data = $dash_data['video'];
-    $index = 0;
-    foreach ($video_data as $i => $video) {
-        if ($video['id'] == $q) {
-            $index = $i;
-            break;
-        }
-    }
-    $quality = $video_data[$index]['id'];
-    $video_url = $video_data[$index]['baseUrl'];
-    $audio_url = $dash_data['audio'][0]['baseUrl'];
-    echo json_encode(array(
-        'code'    => 0,
-        'quality' => $quality,
-        'video'   => $video_url,
-        'audio'   => $audio_url
-    ));
+    echo $bp->result();
     exit;
 }
 
-$data = json_decode($bp->video(), true)[0];
-//echo json_encode($data);exit;
-if (isset($data['code']) && $data['code'] != 0) {
-    echo json_encode($data);
+$res = json_decode($bp->result(), true);
+
+if (isset($res['code']) && $res['code'] != 0) {
+    header('Content-type: application/json; charset=utf-8;');
+    echo json_encode($res);
     exit;
 }
-
-if ($type == 'bangumi') {
-    $data = $data['result'];
-} else if ($format == 'mp4') {
-    $data = $data['data'];
-}
-
-$durl_data = $data['durl'][0];
-
-$url = $durl_data['url'];
-$quality = $data['quality'];
-$res = array(
-    'code'    => 0,
-    'quality' => $quality,
-    'url'     => $url
-);
 
 if ($otype == 'json') {
     header('Content-type: application/json; charset=utf-8;');
     echo json_encode($res);
 } elseif ($otype == 'url') {
     header('Content-type: text/plain; charset=utf-8;');
-    echo $res['url'];
+    if (isset($res['url'])) {
+        echo $res['url'];
+    } else {
+        echo '';
+    }
 }
