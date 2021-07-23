@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.7.2
+// @version      0.7.3
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -98,7 +98,7 @@
                 }
             ]
         });
-        if (use_dash && url_2 && url_2 !== '#') {
+        if (config.format==='dash' && url_2 && url_2 !== '#') {
             $('body').append('<div id="my_dplayer_2" style="display:none"></div>');
             window.my_dplayer_2 = new DPlayer({
                 container: $('#my_dplayer_2')[0],
@@ -226,19 +226,30 @@
         cid = ids.cid;
     }
 
-    function config_init() {
+    function config_init(_config) {
+        window.my_click_event = function() {
+            config.base_api = $('#base_api').val();
+            config.format = $('#format option:selected').val();
+            localStorage.setItem('my_config_str', JSON.stringify(config));
+            $('#my_config').hide();
+            $('#video_download').hide();
+            $('#video_download_2').hide();
+        };
+        const option = ['', 'checked'];
         const config_html =
             '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.5s;z-index:10000;cursor:pointer;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            '<span style="font-size:20px"><b>bilibili视频下载 参数设置（未缓存刷新页面将重置设置）</b></span>' +
+            '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
-            '<input id="base_api" value="https://api.injahow.cn/bparse/" style="width:50%;"><br>' +
+            `<input id="base_api" value="${_config.base_api}" style="width:50%;"><br>` +
             '<span>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</span></div>' +
             '<div style="margin:2% 0;"><label>视频格式：</label>' +
             '<select name="format" id="format">' +
-            '<option value="flv" checked>FLV</option><option value="dash">DASH</option><option value="mp4">MP4</option>' +
+            '<option value="flv" ' + option[Number(_config.format === 'flv')] + '>FLV</option>' +
+            '<option value="dash" ' + option[Number(_config.format === 'dash')] + '>DASH</option>' +
+            '<option value="mp4" ' + option[Number(_config.format === 'mp4')] + '>MP4</option>' +
             '</select></div>' +
-            '<div style="text-align:right"><button class="setting-button" onclick="$(\'#my_config\').hide();$(\'#video_download\').hide();$(\'#video_download_2\').hide();">确定</button></div>' +
+            '<div style="text-align:right"><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
             '</div></div>';
         const config_css =
             '<style>' +
@@ -249,13 +260,20 @@
     }
 
     // config
-    let base_api = 'https://api.injahow.cn/bparse/';
-    let format = 'flv';
-    let use_dash = false;
+    let config = {
+        base_api: 'https://api.injahow.cn/bparse/',
+        format: 'flv'
+    };
+    const config_str = localStorage.getItem('my_config_str');
+    if (!config_str) {
+        localStorage.setItem('my_config_str', JSON.stringify(config));
+    } else {
+        config = JSON.parse(config_str);
+    }
+    config_init(config);
 
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     $('body').append('<a id="video_url_2" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
-    config_init();
 
     // 暂且延迟处理...
     setTimeout(function () {
@@ -295,18 +313,13 @@
 
     $('body').on('click', '#bilibili_parse', function () {
 
-        // 刷新配置
-        base_api = $("#base_api").val();
-        format = $("#format option:selected").val();
-        use_dash = format === 'dash';
         get_video_status();
 
         // 更新cid和aid - 2
         const ids = get_all_id();
         aid = ids.aid;
         cid = ids.cid;
-        if (!aid) {
-            // 异常
+        if (!aid) { // 异常
             console.log('aid获取出错！');
         }
 
@@ -335,11 +348,11 @@
             p = window.__INITIAL_STATE__.epInfo.i || 1;
             type = 'bangumi';
             epid = window.__INITIAL_STATE__.epInfo.id;
-            api_url = `${base_api}?av=${aid}&p=${p}&q=${q}&ep=${epid}&type=${type}&format=${format}&otype=json`;
+            api_url = `${config.base_api}?av=${aid}&p=${p}&q=${q}&ep=${epid}&type=${type}&format=${config.format}&otype=json`;
         } else if (flag_name === 'av' || flag_name === 'bv') {
             p = window.__INITIAL_STATE__.p || 1;
             type = 'video';
-            api_url = `${base_api}?av=${aid}&p=${p}&q=${q}&type=${type}&format=${format}&otype=json`;
+            api_url = `${config.base_api}?av=${aid}&p=${p}&q=${q}&type=${type}&format=${config.format}&otype=json`;
         }
 
         if (api_url === api_url_temp) {
@@ -365,11 +378,11 @@
             success: function (result) {
                 if (result && result.code === 0) {
                     console.log('url获取成功');
-                    const url = use_dash ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
-                    const url_2 = use_dash ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
+                    const url = config.format === 'dash' ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
+                    const url_2 = config.format === 'dash' ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
                     $('#video_url').attr('href', url);
                     $('#video_download').show();
-                    if (use_dash) {
+                    if (config.format === 'dash') {
                         $('#video_url_2').attr('href', url_2);
                         $('#video_download_2').show();
                     }
