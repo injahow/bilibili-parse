@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.3.0
+ * Version 0.3.1
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -101,7 +101,7 @@ class Bilibili
     {
         $this->cache = $value;
         $suppose = array('file', 'apcu');
-        $this->cache_type = in_array($type, $suppose) ? $value : 'file';
+        $this->cache_type = in_array($type, $suppose) ? $type : 'file';
 
         return $this;
     }
