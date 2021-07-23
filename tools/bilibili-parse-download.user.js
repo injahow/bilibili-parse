@@ -98,7 +98,7 @@
                 }
             ]
         });
-        if (config.format==='dash' && url_2 && url_2 !== '#') {
+        if (config.format === 'dash' && url_2 && url_2 !== '#') {
             $('body').append('<div id="my_dplayer_2" style="display:none"></div>');
             window.my_dplayer_2 = new DPlayer({
                 container: $('#my_dplayer_2')[0],
@@ -227,7 +227,7 @@
     }
 
     function config_init(_config) {
-        window.my_click_event = function() {
+        window.my_click_event = function () {
             config.base_api = $('#base_api').val();
             config.format = $('#format option:selected').val();
             localStorage.setItem('my_config_str', JSON.stringify(config));
