@@ -4,7 +4,6 @@ if (!isset($av) && !isset($epid)) exit;
 $p = isset($_GET['p']) ? intval($_GET['p']) : 1;
 $type = isset($_GET['type']) ? $_GET['type'] : 'video';
 $format = 'mp4';
-$otype = 'url';
 
 include __DIR__ . '/../src/Bilibili.php';
 
@@ -13,14 +12,15 @@ use Injahow\Bilibili;
 $bp = new Bilibili($type);
 
 $bp->cache(true)->cache_time(3600);
+// need config apcu
+// $bp->cache(true, 'apcu')->cache_time(3600);
 $bp->epid($ep);
 $bp->aid($av)->page($p)->format($format);
-$data = json_decode($bp->video(), true)[0];
-if (isset($data['code']) && $data['code'] != 0) {
-    $url = '';
+$res = json_decode($bp->result(), true);
+if (isset($res['url'])) {
+    $url = $res['url'];
 } else {
-    if ($format == 'mp4') $data = $data['data'];
-    $url = $data['durl'][0]['url'];
+    $url = '';
 }
 ?>
 <html>

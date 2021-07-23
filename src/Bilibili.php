@@ -154,7 +154,6 @@ class Bilibili
         if ($this->cache) {
             $this->result = $this->getCache();
             if (!empty($this->result)) {
-                //echo 'xxxxxxxx';
                 return $this->result;
             }
         }
@@ -332,7 +331,7 @@ class Bilibili
 
     private function setCid()
     {
-        if (!isset($this->aid)) return;
+        if (empty($this->aid)) return;
         $api_format = $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1);
         $api = array(
             'method' => 'GET',

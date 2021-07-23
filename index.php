@@ -25,7 +25,7 @@ $q = isset($_GET['q']) ? intval($_GET['q']) : 32;
 $type = isset($_GET['type']) ? $_GET['type'] : 'video';
 $format = isset($_GET['format']) ? $_GET['format'] : 'flv';
 
-include  __DIR__ . '/src/Bilibili.php';
+include __DIR__ . '/src/Bilibili.php';
 
 use Injahow\Bilibili;
 
