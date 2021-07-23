@@ -48,12 +48,6 @@ if ($format == 'dash') {
 
 $res = json_decode($bp->result(), true);
 
-if (isset($res['code']) && $res['code'] != 0) {
-    header('Content-type: application/json; charset=utf-8;');
-    echo json_encode($res);
-    exit;
-}
-
 if ($otype == 'json') {
     header('Content-type: application/json; charset=utf-8;');
     echo json_encode($res);
