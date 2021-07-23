@@ -1,6 +1,6 @@
 <?php
 // $av $ep
-if (!isset($av) && !isset($epid)) exit;
+if (!isset($av) && !isset($ep)) exit;
 $p = isset($_GET['p']) ? intval($_GET['p']) : 1;
 $type = isset($_GET['type']) ? $_GET['type'] : 'video';
 $format = 'mp4';
