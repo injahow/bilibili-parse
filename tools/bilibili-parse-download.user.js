@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.7.4
+// @version      0.7.5
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -137,8 +137,8 @@
                 my_dplayer_2.speed(my_dplayer.video.playbackRate);
             });
             my_dplayer.on('volumechange', function () {
-                my_dplayer_2.video.muted = my_dplayer.video.muted;
                 my_dplayer_2.volume(my_dplayer.video.volume);
+                my_dplayer_2.video.muted = my_dplayer.video.muted;
             });
         }
     }
