@@ -12,6 +12,7 @@ if (!$av && !$ep) {
 }
 
 $otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
+$otype = in_array($otype, ['json', 'url', 'dplayer']) ? $otype : 'json';
 
 // only for mp4
 if ($otype == 'dplayer') {
@@ -69,7 +70,7 @@ if ($format == 'dash') {
 }
 
 $data = json_decode($bp->video(), true)[0];
-//echo json_encode($data); exit;
+//echo json_encode($data);exit;
 if (isset($data['code']) && $data['code'] != 0) {
     echo json_encode($data);
     exit;
