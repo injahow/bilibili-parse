@@ -32,7 +32,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
     document.getElementById('content').innerHTML =
-        marked(`<?php include __DIR__ . '/../README.md' ?>`);
+        marked(`<?php echo file_get_contents(__DIR__ . '/../README.md'); ?>`);
 </script>
 
 </html>
