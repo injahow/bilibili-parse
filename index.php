@@ -7,7 +7,7 @@ $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
 
 if (!$av && !$ep) {
-    include __DIR__ . '/public/welcome.html';
+    include __DIR__ . '/public/readme.php';
     exit;
 }
 
