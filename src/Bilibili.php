@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.3.2
+ * Version 0.3.5
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -24,6 +24,7 @@ class Bilibili
     public $cid;
     public $fnval = 0; // 0-FLV 1-MP4 16-DASH
 
+    public $access_key;
     public $header;
     public $result;
     public $cache = false;
@@ -102,6 +103,13 @@ class Bilibili
     {
         $suppose = array('flv', 'dash', 'mp4');
         $this->format = in_array($value, $suppose) ? $value : 'flv';
+
+        return $this;
+    }
+
+    public function access_key($value)
+    {
+        $this->access_key = $value;
 
         return $this;
     }
@@ -241,11 +249,13 @@ class Bilibili
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/x/player/playurl',
             'body'   => array(
-                'avid'  => $this->aid,
-                'cid'   => $this->cid,
-                'qn'    => $qn,
-                'type'  => $this->format == 'mp4' ? 'mp4' : '',
-                'otype' => 'json'
+                'avid'       => $this->aid,
+                'bvid'       => $this->bvid,
+                'cid'        => $this->cid,
+                'qn'         => $qn,
+                'type'       => $this->format == 'mp4' ? 'mp4' : '',
+                'otype'      => 'json',
+                'access_key' => $this->access_key
             ),
             'format' => ''
         );
@@ -285,10 +295,11 @@ class Bilibili
             'quality'    => $this->quality,
             'type'       => ''
         );
+        $body += array('sign' => md5(http_build_query($body) . $this->sec));
         return array(
             'method' => 'GET',
             'url'    => $url[$format],
-            'body'   => $body + array('sign' => md5(http_build_query($body) . $this->sec)),
+            'body'   => $body,
             'format' => $api_format[$format]
         );
     }
@@ -300,15 +311,17 @@ class Bilibili
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/pgc/player/web/playurl',
             'body'   => array(
-                'avid'    => $this->aid,
-                'cid'     => $this->cid,
-                'qn'      => $this->quality,
-                'quality' => $this->quality,
-                'type'    => '',
-                'otype'   => 'json',
-                'ep_id'   => $this->epid,
-                'fnver'   => '0',
-                'fnval'   => $this->fnval
+                'avid'       => $this->aid,
+                'bvid'       => $this->bvid,
+                'cid'        => $this->cid,
+                'qn'         => $this->quality,
+                'quality'    => $this->quality,
+                'type'       => '',
+                'otype'      => 'json',
+                'ep_id'      => $this->epid,
+                'fnver'      => '0',
+                'fnval'      => $this->fnval,
+                'access_key' => $this->access_key
             ),
             'format' => ''
         );
@@ -349,14 +362,15 @@ class Bilibili
     private function setCid()
     {
         if (empty($this->aid)) return;
-        $api_format = $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1);
         $api = array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/x/web-interface/view',
             'body'   => array(
-                'aid' => $this->aid
+                'aid'        => $this->aid,
+                'bvid'       => $this->bvid,
+                'access_key' => $this->access_key
             ),
-            'format' => $api_format
+            'format' => $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1)
         );
         $res = json_decode($this->exec($api), true);
         if (!isset($res[0])) return;
