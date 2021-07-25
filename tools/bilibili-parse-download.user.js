@@ -179,10 +179,10 @@
 
     function get_quality() {
         let _q = 0, _q_max = 0;
-        if (!!parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'))) {
+        if (!!$('li.bui-select-item.bui-select-item-active').attr('data-value')) {
             _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
             _q_max = parseInt($('li.bui-select-item')[0].dataset.value);
-        } else if (!!parseInt($('li.squirtle-select-item.active').attr('data-value'))) {
+        } else if (!!$('li.squirtle-select-item.active').attr('data-value')) {
             _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
             _q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
         }
