@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.8.2
+// @version      0.8.3
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -360,13 +360,12 @@
         const config_css =
             '<style>' +
             '@keyframes settings-bg{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.7)}}' +
-            '.setting-button{width:120px;height:40px;border-width:0px;border-radius:3px;background:#1E90FF;cursor:pointer;outline:none;color: white;font-size:17px;}.setting-button:hover{background:#5599FF;}' +
-            'a{margin:0 2%;}a:hover {color:red;}' +
+            '.setting-button{width:120px;height:40px;border-width:0px;border-radius:3px;background:#1E90FF;cursor:pointer;outline:none;color:white;font-size:17px;}.setting-button:hover{background:#5599FF;}' +
+            'a.setting-context{margin:0 2%;color:blue;}a.setting-context:hover{color:red;}' +
             '</style>';
         const config_html =
             '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.5s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            config_css +
             '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
             `<input id="base_api" value="${_config.base_api}" style="width:50%;"><br/>` +
@@ -376,19 +375,19 @@
             '<option value="flv" ' + option[Number(_config.format === 'flv')] + '>FLV</option>' +
             '<option value="dash" ' + option[Number(_config.format === 'dash')] + '>DASH</option>' +
             '<option value="mp4" ' + option[Number(_config.format === 'mp4')] + '>MP4</option>' +
-            '</select></div>' +
+            '</select><br/><small>注意：番剧暂不支持MP4请求</small></div>' +
             '<div style="margin:2% 0;">' +
             '<label>授权状态：</label><select name="auth" id="auth" disabled>' +
             '<option value="0" ' + option[Number(_config.auth === '0')] + '>未授权</option>' +
             '<option value="1" ' + option[Number(_config.auth === '1')] + '>已授权</option>' +
             '</select>' +
-            '<a href="javascript:void(0);" onclick="bp_show_login()">账号授权</a>' +
-            '<a href="javascript:void(0);" onclick="bp_show_logout()">取消授权</a>' +
-            '<a href="javascript:void(0);" onclick="bp_show_login_help()">这是什么？</a>' +
+            '<a class="setting-context" href="javascript:void(0);" onclick="bp_show_login()">账号授权</a>' +
+            '<a class="setting-context" href="javascript:void(0);" onclick="bp_show_logout()">取消授权</a>' +
+            '<a class="setting-context" href="javascript:void(0);" onclick="bp_show_login_help()">这是什么？</a>' +
             '</div>' +
             '<div style="text-align:right"><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
             '</div></div>';
-        $('body').append(config_html);
+        $('body').append(config_html + config_css);
     }
 
     // config
