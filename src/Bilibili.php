@@ -177,27 +177,34 @@ class Bilibili
 
         $data = json_decode($this->video(), true)[0];
         if (isset($data['code']) && $data['code'] != 0) {
-            $this->result = json_encode($data);
+            return json_encode($data);
         } else {
             if ($this->format == 'dash') {
                 $name = $this->type == 'bangumi' ? 'result' : 'data';
-                $dash_data = $data[$name]['dash'];
-                $video_data = $dash_data['video'];
-                $index = 0;
-                foreach ($video_data as $i => $video) {
-                    if ($video['id'] == $this->quality) {
-                        $index = $i;
-                        break;
+                if (isset($data[$name]['dash'])) { // ? 可能出现durl付费预览
+                    $dash_data = $data[$name]['dash'];
+                    $video_data = $dash_data['video'];
+                    $index = 0;
+                    foreach ($video_data as $i => $video) {
+                        if ($video['id'] == $this->quality) {
+                            $index = $i;
+                            break;
+                        }
                     }
+                    // 强制更新quality
+                    $this->quality($video_data[$index]['id'], true);
+                    $this->result = json_encode(array(
+                        'code'    => 0,
+                        'quality' => $this->quality,
+                        'video'   => $video_data[$index]['baseUrl'],
+                        'audio'   => $dash_data['audio'][0]['baseUrl']
+                    ));
+                } else { // ? durl
+                    return json_encode(array(
+                        'code'    => 1,
+                        'message' => '可能是会员付费视频'
+                    ));
                 }
-                // 强制更新quality
-                $this->quality($video_data[$index]['id'], true);
-                $this->result = json_encode(array(
-                    'code'    => 0,
-                    'quality' => $this->quality,
-                    'video'   => $video_data[$index]['baseUrl'],
-                    'audio'   => $dash_data['audio'][0]['baseUrl']
-                ));
             } else {
                 // todo
                 if ($this->type == 'bangumi') {
@@ -213,10 +220,10 @@ class Bilibili
                     'url'     => $data['durl'][0]['url']
                 ));
             }
+        }
 
-            if ($this->cache) {
-                $this->setCache($this->result);
-            }
+        if ($this->cache) {
+            $this->setCache($this->result);
         }
 
         return $this->result;
