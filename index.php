@@ -4,9 +4,10 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 
 $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
+$bv = isset($_GET['bv']) ? $_GET['bv'] : '';
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
 
-if (!$av && !$ep) {
+if (!$av && !$ep && !$bv) {
     include __DIR__ . '/public/readme.php';
     exit;
 }
@@ -37,7 +38,8 @@ $bp->cache(true)->cache_time(3600);
 // $bp->cache(true, 'apcu')->cache_time(3600);
 
 $bp->epid($ep);
-$bp->aid($av)->page($p)->quality($q)->format($format);
+$bp->aid($av)->bvid($bv)->page($p);
+$bp->quality($q)->format($format);
 
 // dash
 if ($format == 'dash') {

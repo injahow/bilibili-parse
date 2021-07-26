@@ -361,7 +361,7 @@ class Bilibili
 
     private function setCid()
     {
-        if (empty($this->aid)) return;
+        if (empty($this->aid) && empty($this->bvid)) return;
         $api = array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/x/web-interface/view',
