@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.8.5
+// @version      0.9.0
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -284,7 +284,9 @@
                     auth_window.close();
                     window.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                         location.href = 'https://passport.bilibili.com/login';
-                    })
+                    }, () => {
+                        window.login_has_click = false;
+                    });
                 }
             },
             error: () => {
