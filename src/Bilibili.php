@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.3.6
+ * Version 0.3.7
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -15,13 +15,13 @@ namespace Injahow;
 class Bilibili
 {
     public $aid;
-    public $bvid; // 'BV*'
+    public $bvid;
+    public $epid;
     public $page = 1;
+    public $cid;
     public $quality = 32;
     public $type = 'video';
     public $format = 'flv';
-    public $epid;
-    public $cid;
     public $fnval = 0; // 0-FLV 1-MP4 16-DASH
 
     public $access_key;
@@ -79,6 +79,13 @@ class Bilibili
     public function epid($value)
     {
         $this->epid = $value;
+
+        return $this;
+    }
+
+    public function cid($value)
+    {
+        $this->cid = $value;
 
         return $this;
     }
@@ -147,8 +154,18 @@ class Bilibili
 
     public function video()
     {
-        $this->setCid();
+        if (empty($this->cid)) {
+            $this->setCid();
+        }
 
+        if (empty($this->cid)) {
+            return json_encode([array(
+                'code'    => 1,
+                'message' => 'unknown cid'
+            )]);
+        }
+
+        // ? all need cid
         if ($this->type == 'video') {
             if ($this->format == 'dash') {
                 $api = $this->bilibili_api();
@@ -209,7 +226,7 @@ class Bilibili
                 case 'flv':
                     if ($this->type == 'bangumi') {
                         $data = $data['result'];
-                        if (isset($data['format']) && $data['format'] != 'flv') {
+                        if (isset($data['format']) && $data['format'] == 'mp4') {
                             return json_encode(array(
                                 'code'    => 1,
                                 'message' => '可能需要会员播放'
@@ -334,7 +351,6 @@ class Bilibili
 
     private function bilibili_bangumi_api()
     {
-        $this->setCid(); // cid error ?
         return array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/pgc/player/web/playurl',
@@ -389,22 +405,40 @@ class Bilibili
 
     private function setCid()
     {
-        if (empty($this->aid) && empty($this->bvid)) return;
-        $api = array(
-            'method' => 'GET',
-            'url'    => 'https://api.bilibili.com/x/web-interface/view',
-            'body'   => array(
-                'aid'        => $this->aid,
-                'bvid'       => $this->bvid,
-                'access_key' => $this->access_key
-            ),
-            'format' => $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1)
-        );
+        if (!(empty($this->aid) && empty($this->bvid))) {
+            $api = array(
+                'method' => 'GET',
+                'url'    => 'https://api.bilibili.com/x/web-interface/view',
+                'body'   => array(
+                    'aid'        => $this->aid,
+                    'bvid'       => $this->bvid,
+                    'access_key' => $this->access_key
+                ),
+                'format' => $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1)
+            );
+        } else if (!empty($this->epid)) {
+            $api = array(
+                'method' => 'GET',
+                'url'    => 'https://api.bilibili.com/pgc/view/web/season',
+                'body'   => array(
+                    'ep_id'      => $this->epid,
+                    'access_key' => $this->access_key
+                ),
+                'format' => 'result.episodes.' . strval($this->page - 1)
+            );
+        } else {
+            return;
+        }
         $res = json_decode($this->exec($api), true);
         if (!isset($res[0])) return;
-        if ($this->type == 'bangumi')
-            $this->cid = $res[0]['data']['cid'];
-        else
+
+        if ($this->type == 'bangumi') {
+            if (isset($res[0]['data'])) {
+                $this->cid = $res[0]['data']['cid'];
+            } else if (isset($res[0]['cid'])) {
+                $this->cid = $res[0]['cid'];
+            }
+        } else
             $this->cid = $res[0]['cid'];
     }
 
