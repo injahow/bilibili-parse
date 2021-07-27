@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.8.3
+// @version      0.8.5
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -12,7 +12,7 @@
 // @match        *://www.bilibili.com/video/BV*
 // @match        *://www.bilibili.com/bangumi/play/ep*
 // @match        *://www.bilibili.com/bangumi/play/ss*
-// @match        *://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
+// @match        https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
 // @require      https://static.hdslb.com/js/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js
 // @require      https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js
@@ -212,7 +212,7 @@
 
     function recover_player() {
         if (window.my_dplayer) {
-            console.log('销毁dplayer');
+            window.Message.info('销毁dplayer');
             window.my_dplayer.destroy();
             window.my_dplayer = null;
             $('#my_dplayer').remove();
@@ -232,7 +232,7 @@
     }
 
     function refresh() {
-        console.log('refresh...');
+        window.Message.info('refresh...');
         !!$('#video_download')[0] && $('#video_download').hide();
         !!$('#video_download_2')[0] && $('#video_download_2').hide();
         recover_player();
@@ -252,11 +252,22 @@
         return
     }
     window.bp_show_login = function () {
-        if (localStorage.getItem('bp_access_key')) {
-            if (!confirm('发现授权记录，是否重新授权？')) {
-                return;
-            }
+        if (window.login_has_click) {
+            window.Message.info('已经点过一次了~~~');
+            return;
         }
+        window.login_has_click = true;
+        if (localStorage.getItem('bp_access_key')) {
+            window.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
+                login();
+            }, () => {
+                window.login_has_click = false;
+            });
+        } else {
+            login();
+        }
+    }
+    function login() {
         const auth_window = window.open('about:blank');
         auth_window.document.title = 'bilbili-parse - 授权';
         auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在获取授权，请稍候……';
@@ -269,44 +280,50 @@
                 if (data.data.has_login) {
                     auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
                     auth_window.location.href = data.data.confirm_uri;
-                    console.log(data.data.confirm_uri);
-                    return;
                 } else {
                     auth_window.close();
-                    alert('必须登录B站才能正常授权', () => {
+                    window.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                         location.href = 'https://passport.bilibili.com/login';
-                    });
+                    })
                 }
             },
             error: () => {
-                alert('授权出错!');
+                window.MessageBox.alert('授权出错!');
+                window.login_has_click = false;
             }
         });
     }
     window.bp_show_logout = function () {
+        if (window.logout_has_click) {
+            window.Message.info('已经点过一次了~~~');
+            return;
+        }
+        window.logout_has_click = true;
         if (!localStorage.getItem('bp_access_key')) {
-            alert('没有发现授权记录');
+            window.MessageBox.alert('没有发现授权记录');
+            window.logout_has_click = false;
             return;
         }
         get_user_status();
         $.ajax(`${config.base_api}/logout/?mid=${mid}`, {
             type: 'GET',
             success: () => {
-                alert('取消授权成功!');
-                localStorage.setItem('bp_access_key', '');
-                $('#auth').val('0');
+                window.MessageBox.alert('取消授权成功!', () => {
+                    localStorage.setItem('bp_access_key', '');
+                    $('#auth').val('0');
+                    window.logout_has_click = false;
+                });
             },
             error: () => {
-                alert('取消授权失败!');
+                window.MessageBox.alert('取消授权失败!');
+                window.logout_has_click = false;
             }
         });
     }
     window.bp_show_login_help = function () {
-        if (!confirm('进行授权之后将可以在请求地址时正常享有会员的权益\n你可以随时在这里授权或取消授权\n不进行授权不会影响脚本的正常使用，但可能会缺失1080P\n是否需要授权？')) {
-            return;
-        } else {
+        window.MessageBox.confirm('进行授权之后将可以在请求地址时正常享有会员的权益（例如能够获取用户已经付费的番剧），你可以随时在这里授权或取消授权，不进行授权不会影响脚本的正常使用，但可能会出现大量请求失败的提示，是否需要授权？', () => {
             window.bp_show_login();
-        }
+        });
     }
     window.addEventListener('message', function (e) {
         var _a;
@@ -318,15 +335,121 @@
             $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png', config.base_api + '/login/'), {
                 dataType: 'json',
                 success: () => {
-                    alert('授权成功!');
-                    $('#auth').val('1');
+                    window.MessageBox.alert('授权成功!', () => {
+                        $('#auth').val('1');
+                        window.login_has_click = false;
+                    });
                 },
                 error: () => {
-                    alert('授权失败!');
+                    window.MessageBox.alert('授权失败!');
+                    window.login_has_click = false;
                 }
             });
         }
     });
+
+    function components_init() {
+        window.Message = {
+            success: (html) => {
+                message(html, 'success');
+            },
+            warning: (html) => {
+                message(html, 'warning');
+            },
+            danger: (html) => {
+                message(html, 'danger');
+            },
+            info: (html) => {
+                message(html, 'info');
+            }
+        };
+        window.MessageBox = {
+            alert: (html, affirm) => {
+                messageBox({ html, callback: { affirm } }, 'alert');
+            },
+            confirm: (html, affirm, cancel) => {
+                messageBox({
+                    html, callback: {
+                        affirm, cancel
+                    }
+                }, 'confirm');
+            }
+        };
+        const components_css =
+            '<style>' +
+            '.message-bg{position:fixed;float:right;right:0;top:2%;z-index:10001;}' +
+            '.message{margin-bottom:15px;padding:4px 12px;width:300px;display:flex;margin-top:-70px;opacity:0;}' +
+            '.message-danger{background-color:#ffdddd;border-left:6px solid #f44336;}' +
+            '.message-success{background-color:#ddffdd;border-left:6px solid #4caf50;}' +
+            '.message-info{background-color:#e7f3fe;border-left:6px solid #0c86de;}' +
+            '.message-warning{background-color:#ffffcc;border-left:6px solid #ffeb3b;}' +
+            '.message-context{font-size:21px;word-wrap:break-word;word-break:break-all;}' +
+            '.message_box_btn{text-align:right;}.message_box_btn button{margin:0 5px;}' +
+            '</style>';
+        const components_html =
+            '<div class="message-bg"></div>' +
+            '<div id="message_box" style="opacity:0;display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
+            '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:400px;transform:translate(-50%,-50%);cursor:default;">' +
+            '<span style="font-size:20px"><b>提示：</b></span>' +
+            '<div id="message_box_context" style="margin:2% 0;">......</div><br/><br/>' +
+            '<div class="message_box_btn">' +
+            '<button class="setting-button" name="affirm">确定</button>' +
+            '<button class="setting-button" name="cancel">取消</button></div>' +
+            '</div></div>';
+        function messageBox(ctx, type) {
+            if (type === 'confirm') {
+                $('div.message_box_btn button[name="cancel"]').show();
+            } else if (type === 'alert') {
+                $('div.message_box_btn button[name="cancel"]').hide();
+            }
+            if (ctx.html) {
+                $('div#message_box_context').html(`<div style="font-size:18px">${ctx.html}</div>`);
+            } else {
+                $('div#message_box_context').html('<div style="font-size:18px">╰(￣▽￣)╮</div>');
+            }
+            $('#message_box').show();
+            $('div#message_box').animate({
+                'opacity': '1'
+            }, 300);
+            $('div.message_box_btn button[name="affirm"]')[0].onclick = () => {
+                $('div#message_box').hide();
+                if (ctx.callback && ctx.callback.affirm) {
+                    ctx.callback.affirm();
+                }
+            };
+            $('div.message_box_btn button[name="cancel"]')[0].onclick = () => {
+                $('div#message_box').hide();
+                if (ctx.callback && ctx.callback.cancel) {
+                    ctx.callback.cancel();
+                }
+            };
+        }
+        let id = 0;
+        function message(html, type) {
+            id += 1;
+            messageEnQueue(`<div id="message-${id}" class="message message-${type}"><div class="message-context"><p><strong>${type}：</strong></p><p>${html}</p></div></div>`, id);
+            messageDeQueue(id);
+        }
+        function messageEnQueue(html, id) {
+            $('div.message-bg').append(html);
+            $(`div#message-${id}`).animate({
+                'margin-top': '+=70px',
+                'opacity': '1',
+            }, 300);
+        }
+        function messageDeQueue(id, time = 3000) {
+            setTimeout(() => {
+                const e = `div#message-${id}`;
+                $(e).animate({
+                    'margin-top': '-=70px',
+                    'opacity': '0',
+                }, 300, () => {
+                    $(e).remove();
+                });
+            }, time);
+        }
+        $('body').append(components_html + components_css);
+    }
 
     function config_init() {
         const config_str = localStorage.getItem('my_config_str');
@@ -343,9 +466,10 @@
             }
         }
         const _config = config;
-        window.my_click_event = function () {
+        window.my_click_event = () => {
             config.base_api = $('#base_api').val();
             config.format = $('#format option:selected').val();
+            config.replace_force = $('#replace_force option:selected').val();
             config.auth = $('#auth option:selected').val();
             new_config_str = JSON.stringify(config);
             localStorage.setItem('my_config_str', new_config_str);
@@ -353,7 +477,7 @@
             $('#video_download').hide();
             $('#video_download_2').hide();
         };
-        window.onbeforeunload = function (e) {
+        window.onbeforeunload = () => {
             window.my_click_event();
         }
         const option = ['', 'selected'];
@@ -364,7 +488,7 @@
             'a.setting-context{margin:0 2%;color:blue;}a.setting-context:hover{color:red;}' +
             '</style>';
         const config_html =
-            '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.5s;z-index:10000;cursor:default;">' +
+            '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
             '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
@@ -376,14 +500,19 @@
             '<option value="dash" ' + option[Number(_config.format === 'dash')] + '>DASH</option>' +
             '<option value="mp4" ' + option[Number(_config.format === 'mp4')] + '>MP4</option>' +
             '</select><br/><small>注意：番剧暂不支持MP4请求</small></div>' +
+            '<div style="margin:2% 0;"><label>强制换源：</label>' +
+            '<select name="replace_force" id="replace_force">' +
+            '<option value="0" ' + option[Number(_config.replace_force === '0')] + '>关闭</option>' +
+            '<option value="1" ' + option[Number(_config.replace_force === '1')] + '>开启</option>' +
+            '</select><br/><small>说明：强制使用请求到的视频地址和第三方播放器进行播放</small></div>' +
             '<div style="margin:2% 0;">' +
             '<label>授权状态：</label><select name="auth" id="auth" disabled>' +
             '<option value="0" ' + option[Number(_config.auth === '0')] + '>未授权</option>' +
             '<option value="1" ' + option[Number(_config.auth === '1')] + '>已授权</option>' +
             '</select>' +
-            '<a class="setting-context" href="javascript:void(0);" onclick="bp_show_login()">账号授权</a>' +
-            '<a class="setting-context" href="javascript:void(0);" onclick="bp_show_logout()">取消授权</a>' +
-            '<a class="setting-context" href="javascript:void(0);" onclick="bp_show_login_help()">这是什么？</a>' +
+            '<a class="setting-context" href="javascript:;" onclick="bp_show_login()">账号授权</a>' +
+            '<a class="setting-context" href="javascript:;" onclick="bp_show_logout()">取消授权</a>' +
+            '<a class="setting-context" href="javascript:;" onclick="bp_show_login_help()">这是什么？</a>' +
             '</div>' +
             '<div style="text-align:right"><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
             '</div></div>';
@@ -394,9 +523,13 @@
     let config = {
         base_api: 'https://api.injahow.cn/bparse/',
         format: 'flv',
+        replace_force: '0',
         auth: '0',
     };
     config_init();
+
+    // components
+    components_init();
 
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
     $('body').append('<a id="video_url_2" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
@@ -445,14 +578,14 @@
         aid = ids.aid;
         cid = ids.cid;
         if (!aid) { // 异常
-            console.log('aid获取出错！');
+            window.Message.warning('aid获取出错！');
         }
 
         const quality = get_quality();
         q = quality.q;
 
         get_user_status();
-        if (!is_login || (is_login && vip_status === 0 && need_vip)) {
+        if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
             q = quality.q_max > 80 ? 80 : quality.q_max;
             // 暂停视频准备换源
             !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
@@ -471,13 +604,13 @@
         }
 
         if (api_url === api_url_temp && new_config_str === new_config_str_temp) {
-            console.log('重复请求');
+            window.Message.warning('重复请求');
             const url = $('#video_url').attr('href');
             const url_2 = $('#video_url_2').attr('href');
             if (url && url !== '#') {
                 $('#video_download').show();
                 config.format === 'dash' && $('#video_download_2').show();
-                if (!is_login || (is_login && vip_status === 0 && need_vip)) {
+                if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
                     !$('#my_dplayer')[0] && replace_player(url, url_2);
                 }
             }
@@ -488,12 +621,12 @@
         api_url_temp = api_url;
         new_config_str_temp = new_config_str;
 
-        console.log('开始解析');
+        window.Message.info('开始解析');
         $.ajax(api_url, {
             dataType: 'json',
             success: (result) => {
                 if (result && result.code === 0) {
-                    console.log('url获取成功');
+                    window.Message.success('url获取成功');
                     const url = config.format === 'dash' ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
                     const url_2 = config.format === 'dash' ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
                     $('#video_url').attr('href', url);
@@ -502,15 +635,16 @@
                         $('#video_url_2').attr('href', url_2);
                         $('#video_download_2').show();
                     }
-                    if (!is_login || (is_login && vip_status === 0 && need_vip)) {
+                    if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
                         replace_player(url, url_2);
                     }
                 } else {
-                    console.log('url获取失败');
+                    window.Message.warning('url获取失败');
                 }
             },
             error: (e) => {
-                console.log('api请求异常', e);
+                window.Message.danger('api请求异常');
+                console.log('error', e);
             }
         });
     });
