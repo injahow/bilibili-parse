@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.0
+// @version      0.9.1
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -252,16 +252,16 @@
         return
     }
     window.bp_show_login = function () {
-        if (window.login_has_click) {
+        if (window.login_clicked) {
             window.Message.info('已经点过一次了~~~');
             return;
         }
-        window.login_has_click = true;
+        window.login_clicked = true;
         if (localStorage.getItem('bp_access_key')) {
             window.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
                 login();
             }, () => {
-                window.login_has_click = false;
+                window.login_clicked = false;
             });
         } else {
             login();
@@ -285,25 +285,25 @@
                     window.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                         location.href = 'https://passport.bilibili.com/login';
                     }, () => {
-                        window.login_has_click = false;
+                        window.login_clicked = false;
                     });
                 }
             },
             error: () => {
                 window.MessageBox.alert('授权出错!');
-                window.login_has_click = false;
+                window.login_clicked = false;
             }
         });
     }
     window.bp_show_logout = function () {
-        if (window.logout_has_click) {
+        if (window.logout_clicked) {
             window.Message.info('已经点过一次了~~~');
             return;
         }
-        window.logout_has_click = true;
+        window.logout_clicked = true;
         if (!localStorage.getItem('bp_access_key')) {
             window.MessageBox.alert('没有发现授权记录');
-            window.logout_has_click = false;
+            window.logout_clicked = false;
             return;
         }
         get_user_status();
@@ -313,12 +313,12 @@
                 window.MessageBox.alert('取消授权成功!', () => {
                     localStorage.setItem('bp_access_key', '');
                     $('#auth').val('0');
-                    window.logout_has_click = false;
+                    window.logout_clicked = false;
                 });
             },
             error: () => {
                 window.MessageBox.alert('取消授权失败!');
-                window.logout_has_click = false;
+                window.logout_clicked = false;
             }
         });
     }
@@ -339,12 +339,12 @@
                 success: () => {
                     window.MessageBox.alert('授权成功!', () => {
                         $('#auth').val('1');
-                        window.login_has_click = false;
+                        window.login_clicked = false;
                     });
                 },
                 error: () => {
                     window.MessageBox.alert('授权失败!');
-                    window.login_has_click = false;
+                    window.login_clicked = false;
                 }
             });
         }
