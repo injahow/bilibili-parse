@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.1
+// @version      0.9.2
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -307,7 +307,7 @@
             return;
         }
         get_user_status();
-        $.ajax(`${config.base_api}/logout/?mid=${mid}`, {
+        $.ajax(`${config.base_api}/auth/?act=logout&mid=${mid}`, {
             type: 'GET',
             success: () => {
                 window.MessageBox.alert('取消授权成功!', () => {
@@ -334,7 +334,7 @@
             (_a = window.auth_window) === null || _a === void 0 ? void 0 : _a.close();
             let url = e.data.split(': ')[1];
             localStorage.setItem('bp_access_key', new URL(url).searchParams.get('access_key'))
-            $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png', config.base_api + '/login/'), {
+            $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/?act=login&vip_status=${vip_status}&`), {
                 dataType: 'json',
                 success: () => {
                     window.MessageBox.alert('授权成功!', () => {
