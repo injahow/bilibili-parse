@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.3.5
+ * Version 0.3.6
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -179,46 +179,67 @@ class Bilibili
         if (isset($data['code']) && $data['code'] != 0) {
             return json_encode($data);
         } else {
-            if ($this->format == 'dash') {
-                $name = $this->type == 'bangumi' ? 'result' : 'data';
-                if (isset($data[$name]['dash'])) { // ? 可能出现durl付费预览
-                    $dash_data = $data[$name]['dash'];
-                    $video_data = $dash_data['video'];
-                    $index = 0;
-                    foreach ($video_data as $i => $video) {
-                        if ($video['id'] == $this->quality) {
-                            $index = $i;
-                            break;
+            switch ($this->format) {
+                case 'dash':
+                    $name = $this->type == 'bangumi' ? 'result' : 'data';
+                    if (isset($data[$name]['dash'])) { // ? 可能出现durl付费预览
+                        $dash_data = $data[$name]['dash'];
+                        $video_data = $dash_data['video'];
+                        $index = 0;
+                        foreach ($video_data as $i => $video) {
+                            if ($video['id'] == $this->quality) {
+                                $index = $i;
+                                break;
+                            }
+                        }
+                        $this->quality($video_data[$index]['id'], true);
+                        $this->result = json_encode(array(
+                            'code'    => 0,
+                            'quality' => $this->quality,
+                            'video'   => $video_data[$index]['baseUrl'],
+                            'audio'   => $dash_data['audio'][0]['baseUrl']
+                        ));
+                    } else { // ? durl
+                        return json_encode(array(
+                            'code'    => 1,
+                            'message' => '可能是会员付费视频'
+                        ));
+                    }
+                    break;
+                case 'flv':
+                    if ($this->type == 'bangumi') {
+                        $data = $data['result'];
+                        if (isset($data['format']) && $data['format'] != 'flv') {
+                            return json_encode(array(
+                                'code'    => 1,
+                                'message' => '可能需要会员播放'
+                            ));
                         }
                     }
-                    // 强制更新quality
-                    $this->quality($video_data[$index]['id'], true);
+                    $this->quality($data['quality'], true);
                     $this->result = json_encode(array(
                         'code'    => 0,
                         'quality' => $this->quality,
-                        'video'   => $video_data[$index]['baseUrl'],
-                        'audio'   => $dash_data['audio'][0]['baseUrl']
+                        'url'     => $data['durl'][0]['url']
                     ));
-                } else { // ? durl
-                    return json_encode(array(
-                        'code'    => 1,
-                        'message' => '可能是会员付费视频'
-                    ));
-                }
-            } else {
-                // todo
-                if ($this->type == 'bangumi') {
-                    $data = $data['result'];
-                } else if ($this->format == 'mp4') {
-                    $data = $data['data'];
-                }
-                // 强制更新quality
-                $this->quality($data['quality'], true);
-                $this->result = json_encode(array(
-                    'code'    => 0,
-                    'quality' => $this->quality,
-                    'url'     => $data['durl'][0]['url']
-                ));
+                    break;
+                case 'mp4':
+                    // todo
+                    if ($this->type == 'video') {
+                        $data = $data['data'];
+                        $this->quality($data['quality'], true);
+                        $this->result = json_encode(array(
+                            'code'    => 0,
+                            'quality' => $this->quality,
+                            'url'     => $data['durl'][0]['url']
+                        ));
+                    } else {
+                        return json_encode(array(
+                            'code'    => 1,
+                            'message' => '暂不支持番剧的MP4请求'
+                        ));
+                    }
+                    break;
             }
         }
 
