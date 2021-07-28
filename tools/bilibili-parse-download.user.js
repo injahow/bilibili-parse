@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.3
+// @version      0.9.4
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -202,12 +202,9 @@
             _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
             _q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
         }
-        if (_q === 0) {
-            _q = _q_max > 80 ? 80 : _q_max;
-        }
-        _q = _q || 80;
+        _q = _q || _q_max || 80;
         _q_max = _q_max || 80;
-        return { q: _q, q_max: _q_max }
+        return { q: _q, q_max: _q_max };
     }
 
     function recover_player() {
@@ -252,16 +249,16 @@
         return
     }
     window.bp_show_login = function () {
-        if (window.login_clicked) {
-            window.Message.info('已经点过一次了~~~');
+        if (window.auth_clicked) {
+            window.Message.info('(^・ω・^)~喵喵喵~');
             return;
         }
-        window.login_clicked = true;
+        window.auth_clicked = true;
         if (localStorage.getItem('bp_access_key')) {
             window.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
                 login();
             }, () => {
-                window.login_clicked = false;
+                window.auth_clicked = false;
             });
         } else {
             login();
@@ -285,40 +282,39 @@
                     window.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                         location.href = 'https://passport.bilibili.com/login';
                     }, () => {
-                        window.login_clicked = false;
+                        window.auth_clicked = false;
                     });
                 }
             },
             error: () => {
                 window.MessageBox.alert('授权出错!');
-                window.login_clicked = false;
+                window.auth_clicked = false;
             }
         });
     }
     window.bp_show_logout = function () {
-        if (window.logout_clicked) {
-            window.Message.info('已经点过一次了~~~');
+        if (window.auth_clicked) {
+            window.Message.info('(^・ω・^)~喵喵喵~');
             return;
         }
-        window.logout_clicked = true;
+        window.auth_clicked = true;
         if (!localStorage.getItem('bp_access_key')) {
             window.MessageBox.alert('没有发现授权记录');
-            window.logout_clicked = false;
+            window.auth_clicked = false;
             return;
         }
         get_user_status();
         $.ajax(`${config.base_api}/auth/?act=logout&mid=${mid}`, {
             type: 'GET',
             success: () => {
-                window.MessageBox.alert('取消授权成功!', () => {
-                    localStorage.setItem('bp_access_key', '');
-                    $('#auth').val('0');
-                    window.logout_clicked = false;
-                });
+                window.MessageBox.alert('取消授权成功!')
+                localStorage.setItem('bp_access_key', '');
+                $('#auth').val('0');
+                window.auth_clicked = false;
             },
             error: () => {
                 window.MessageBox.alert('取消授权失败!');
-                window.logout_clicked = false;
+                window.auth_clicked = false;
             }
         });
     }
@@ -340,12 +336,12 @@
                 success: () => {
                     window.MessageBox.alert('授权成功!', () => {
                         $('#auth').val('1');
-                        window.login_clicked = false;
+                        window.auth_clicked = false;
                     });
                 },
                 error: () => {
                     window.MessageBox.alert('授权失败!');
-                    window.login_clicked = false;
+                    window.auth_clicked = false;
                 }
             });
         }
