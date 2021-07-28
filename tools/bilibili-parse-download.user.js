@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.4
+// @version      0.9.5
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -143,7 +143,7 @@
         }
     }
 
-    function get_video_status() {
+    function get_video_status() { // todo
         const location_href = window.location.href;
         if (location_href.match(/bilibili.com\/bangumi\/play\/ep/)) {
             flag_name = 'ep';
@@ -209,7 +209,7 @@
 
     function recover_player() {
         if (window.my_dplayer) {
-            window.Message.info('销毁dplayer');
+            window.Message.info('恢复播放器');
             window.my_dplayer.destroy();
             window.my_dplayer = null;
             $('#my_dplayer').remove();
@@ -218,7 +218,6 @@
                 window.my_dplayer_2 = null;
                 $('#my_dplayer_2').remove();
             }
-            // 恢复播放器
             if (!!$('#bilibiliPlayer')[0]) {
                 $('#bilibiliPlayer').show();
             } else {
