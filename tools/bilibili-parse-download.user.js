@@ -195,15 +195,13 @@
 
     function get_quality() {
         let _q = 0, _q_max = 0;
-        if (!!$('li.bui-select-item.bui-select-item-active').attr('data-value')) {
-            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
+        if (!!(_q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')))) {
             _q_max = parseInt($('li.bui-select-item')[0].dataset.value);
-        } else if (!!$('li.squirtle-select-item.active').attr('data-value')) {
-            _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
+        } else if (!!(_q = parseInt($('li.squirtle-select-item.active').attr('data-value')))) {
             _q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
+        } else {
+            _q = _q_max = 80;
         }
-        _q = _q || _q_max || 80;
-        _q_max = _q_max || 80;
         return { q: _q, q_max: _q_max };
     }
 
@@ -586,7 +584,6 @@
         get_user_status();
         if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
             q = quality.q_max > 80 ? 80 : quality.q_max;
-            // 暂停视频准备换源
             !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         }
 
@@ -620,12 +617,12 @@
         api_url_temp = api_url;
         new_config_str_temp = new_config_str;
 
-        window.Message.info('开始解析');
+        window.Message.info('开始请求');
         $.ajax(api_url, {
             dataType: 'json',
             success: (result) => {
                 if (result && result.code === 0) {
-                    window.Message.success('url获取成功');
+                    window.Message.success('请求成功');
                     const url = config.format === 'dash' ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
                     const url_2 = config.format === 'dash' ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
                     $('#video_url').attr('href', url);
@@ -638,11 +635,11 @@
                         replace_player(url, url_2);
                     }
                 } else {
-                    window.Message.warning('url获取失败');
+                    window.Message.warning('请求失败：' + result.message);
                 }
             },
             error: (e) => {
-                window.Message.danger('api请求异常');
+                window.Message.danger('请求异常');
                 console.log('error', e);
             }
         });
