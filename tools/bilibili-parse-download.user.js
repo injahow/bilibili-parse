@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.5
+// @version      0.9.6
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -306,13 +306,13 @@
         $.ajax(`${config.base_api}/auth/?act=logout&mid=${mid}`, {
             type: 'GET',
             success: () => {
-                window.MessageBox.alert('取消授权成功!')
+                window.Message.success('取消授权成功!')
                 localStorage.setItem('bp_access_key', '');
                 $('#auth').val('0');
                 window.auth_clicked = false;
             },
             error: () => {
-                window.MessageBox.alert('取消授权失败!');
+                window.Message.danger('取消授权失败!');
                 window.auth_clicked = false;
             }
         });
@@ -333,13 +333,12 @@
             $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/?act=login&vip_status=${vip_status}&`), {
                 dataType: 'json',
                 success: () => {
-                    window.MessageBox.alert('授权成功!', () => {
-                        $('#auth').val('1');
-                        window.auth_clicked = false;
-                    });
+                    window.Message.success('授权成功!');
+                    $('#auth').val('1');
+                    window.auth_clicked = false;
                 },
                 error: () => {
-                    window.MessageBox.alert('授权失败!');
+                    window.MessageBox.danger('授权失败!');
                     window.auth_clicked = false;
                 }
             });
