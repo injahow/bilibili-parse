@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.1
+ * Version 0.4.2
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -29,6 +29,7 @@ class Bilibili
     public $cache_time = 3600;
 
     public $result;
+    public $has_cookie = false;
     public $header;
     public $proxy = null;
     public $data;
@@ -93,7 +94,7 @@ class Bilibili
     {
         $value = intval($value);
         if (!$force) {
-            $suppose = array(116, 112, 80, 74, 64, 48, 32,  16); // todo
+            $suppose = array(120, 116, 112, 80, 74, 64, 48, 32, 16); // todo
             foreach ($suppose as $v) {
                 if ($v <= $value) {
                     $this->quality = $v;
@@ -143,6 +144,7 @@ class Bilibili
 
     public function cookie($value)
     {
+        $this->has_cookie = empty($value) ? false : true;
         $this->header['Cookie'] = $value;
 
         return $this;
@@ -169,7 +171,7 @@ class Bilibili
         }
 
         if ($this->type == 'video') {
-            if (empty($this->access_key) && $this->format != 'dash') {
+            if (empty($this->access_key) && !$this->has_cookie) {
                 $api = $this->bilibili_video_api();
             } else {
                 $api = $this->bilibili_api();
@@ -200,12 +202,22 @@ class Bilibili
                 case 'dash':
                     if (isset($data['dash'])) {
                         $index = 0;
+                        $find = 0;
                         foreach ($data['dash']['video'] as $i => $video) {
                             if ($video['id'] == $this->quality) {
                                 $index = $i;
+                                $find = 1;
                                 break;
                             }
                         }
+
+                        if ($find == 0) {
+                            return json_encode(array(
+                                'code'    => 1,
+                                'message' => '可能需要会员或未知的quality'
+                            ));
+                        }
+
                         $this->result = json_encode(array(
                             'code'           => 0,
                             'quality'        => $data['dash']['video'][$index]['id'],
@@ -220,7 +232,9 @@ class Bilibili
                         ));
                     }
                     break;
+
                 case 'flv':
+
                     if ($this->type == 'bangumi') {
                         if (isset($data['format']) && $data['format'] == 'mp4') {
                             return json_encode(array(
@@ -229,6 +243,14 @@ class Bilibili
                             ));
                         }
                     }
+
+                    if ($this->quality != $data['quality']) {
+                        return json_encode(array(
+                            'code'    => 1,
+                            'message' => '可能需要会员或未知的quality'
+                        ));
+                    }
+
                     $this->result = json_encode(array(
                         'code'           => 0,
                         'quality'        => $data['quality'],
@@ -236,8 +258,8 @@ class Bilibili
                         'url'            => $data['durl'][0]['url']
                     ));
                     break;
-                case 'mp4':
 
+                case 'mp4':
                     if ($this->type == 'video') {
                         $this->quality($data['quality'], true);
                         $this->result = json_encode(array(
@@ -312,12 +334,11 @@ class Bilibili
             case 'dash':
                 $api['body'] += array(
                     'fnver' => 0,
-                    'fnval' => $this->format == 'dash' ? 16 : 0,
+                    'fnval' => $this->format == 'dash' ? 80 : 0,
                     'fourk' => 1
                 );
                 break;
         }
-
         return $api;
     }
 
@@ -332,7 +353,6 @@ class Bilibili
                 'mp4' => 'https://app.bilibili.com/v2/playurlproj'
             )[$this->format != 'flv' ? 'mp4' : 'flv'],
             'body'   => array(
-                'access_key' => $this->access_key,
                 'appkey'     => $this->appkey,
                 'cid'        => $this->cid,
                 'otype'      => 'json',
@@ -362,10 +382,34 @@ class Bilibili
                 'otype'      => 'json',
                 'ep_id'      => $this->epid,
                 'fnver'      => '0',
-                'fnval'      => $this->format == 'dash' ? 16 : 0,
+                'fnval'      => $this->format == 'dash' ? 80 : 0,
                 'access_key' => $this->access_key
             ),
             'format' => 'result'
+        );
+    }
+
+    private function bangumi_season_id($media_id)
+    {
+        // media_id -> season_id
+        return array(
+            'method' => 'GET',
+            'url'    => 'https://api.bilibili.com/pgc/review/user',
+            'body'   => array(
+                'media_id' => $media_id
+            )
+        );
+    }
+
+    private function bangumi_cid($season_id)
+    {
+        // season_id -> all(cid)
+        return array(
+            'method' => 'GET',
+            'url'    => 'https://api.bilibili.com/pgc/web/season/section',
+            'body'   => array(
+                'season_id' => $season_id
+            )
         );
     }
 
