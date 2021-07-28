@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.0
+ * Version 0.3.7
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -22,14 +22,15 @@ class Bilibili
     public $quality = 32;
     public $type = 'video';
     public $format = 'flv';
-    public $access_key;
+    public $fnval = 0; // 0-FLV 1-MP4 16-DASH
 
+    public $access_key;
+    public $header;
+    public $result;
     public $cache = false;
     public $cache_type = 'file';
     public $cache_time = 3600;
 
-    public $result;
-    public $header;
     public $proxy = null;
     public $data;
     public $raw;
@@ -96,15 +97,8 @@ class Bilibili
     {
         $value = intval($value);
         if (!$force) {
-            $suppose = array(116, 112, 80, 74, 64, 48, 32,  16); // todo
-            foreach ($suppose as $v) {
-                if ($v <= $value) {
-                    $this->quality = $v;
-
-                    return $this;
-                }
-            }
-            $this->quality = 32;
+            $suppose = array(16, 32, 48, 64, 74, 80, 112, 116); // ...
+            $this->quality = in_array($value, $suppose) ? $value : 32;
         } else {
             $this->quality = $value;
         }
@@ -139,7 +133,6 @@ class Bilibili
     public function cache_time($value = 3600)
     {
         // min 60s
-        $value = intval($value);
         $this->cache_time = $value > 60 ? $value : 60;
 
         return $this;
@@ -172,17 +165,21 @@ class Bilibili
             )]);
         }
 
+        // ? all need cid
         if ($this->type == 'video') {
-            if (empty($this->access_key) && $this->format != 'dash') {
-                $api = $this->bilibili_video_api();
-            } else {
+            if ($this->format == 'dash') {
                 $api = $this->bilibili_api();
+            } else {
+                $api = $this->format == 'mp4' ? $this->bilibili_api() : $this->bilibili_video_api();
             }
-        } else {
+        } elseif ($this->type == 'bangumi') {
+            $this->fnval = $this->format == 'dash' ? 16 : 0;
             $api = $this->bilibili_bangumi_api();
         }
 
-        return $this->exec($api);
+        $data = $this->exec($api);
+
+        return $data;
     }
 
     public function result()
@@ -196,26 +193,28 @@ class Bilibili
         }
 
         $data = json_decode($this->video(), true)[0];
-        $raw = json_decode($this->raw, true);
-        if (isset($raw['code']) && $raw['code'] != 0) {
-            return $this->raw;
+        if (isset($data['code']) && $data['code'] != 0) {
+            return json_encode($data);
         } else {
             switch ($this->format) {
                 case 'dash':
-                    if (isset($data['dash'])) {
+                    $name = $this->type == 'bangumi' ? 'result' : 'data';
+                    if (isset($data[$name]['dash'])) { // ? 可能出现durl付费预览
+                        $dash_data = $data[$name]['dash'];
+                        $video_data = $dash_data['video'];
                         $index = 0;
-                        foreach ($data['dash']['video'] as $i => $video) {
+                        foreach ($video_data as $i => $video) {
                             if ($video['id'] == $this->quality) {
                                 $index = $i;
                                 break;
                             }
                         }
+                        $this->quality($video_data[$index]['id'], true);
                         $this->result = json_encode(array(
-                            'code'           => 0,
-                            'quality'        => $data['dash']['video'][$index]['id'],
-                            'accept_quality' => $data['accept_quality'],
-                            'video'          => $data['dash']['video'][$index]['baseUrl'],
-                            'audio'          => $data['dash']['audio'][0]['baseUrl']
+                            'code'    => 0,
+                            'quality' => $this->quality,
+                            'video'   => $video_data[$index]['baseUrl'],
+                            'audio'   => $dash_data['audio'][0]['baseUrl']
                         ));
                     } else { // ? durl
                         return json_encode(array(
@@ -226,6 +225,7 @@ class Bilibili
                     break;
                 case 'flv':
                     if ($this->type == 'bangumi') {
+                        $data = $data['result'];
                         if (isset($data['format']) && $data['format'] == 'mp4') {
                             return json_encode(array(
                                 'code'    => 1,
@@ -233,25 +233,24 @@ class Bilibili
                             ));
                         }
                     }
+                    $this->quality($data['quality'], true);
                     $this->result = json_encode(array(
-                        'code'           => 0,
-                        'quality'        => $data['quality'],
-                        'accept_quality' => $data['accept_quality'],
-                        'url'            => $data['durl'][0]['url']
+                        'code'    => 0,
+                        'quality' => $this->quality,
+                        'url'     => $data['durl'][0]['url']
                     ));
                     break;
                 case 'mp4':
-
+                    // todo
                     if ($this->type == 'video') {
+                        $data = $data['data'];
                         $this->quality($data['quality'], true);
                         $this->result = json_encode(array(
-                            'code'           => 0,
-                            'quality'        => $this->quality,
-                            'accept_quality' => $data['accept_quality'],
-                            'url'            => $data['durl'][0]['url']
+                            'code'    => 0,
+                            'quality' => $this->quality,
+                            'url'     => $data['durl'][0]['url']
                         ));
                     } else {
-                        // todo
                         return json_encode(array(
                             'code'    => 1,
                             'message' => '暂不支持番剧的MP4请求'
@@ -271,16 +270,16 @@ class Bilibili
     private function getCacheName()
     {
         // ! mkdir '/cache/*'
-        if ($this->format == 'flv')
-            $suffix = $this->quality . '_' . $this->format;
+        if ($this->format == 'mp4')
+            $suffix = 'mp4';
         else
-            $suffix = $this->format;
+            $suffix = $this->quality . '_' . $this->format;
 
         if (!isset($this->cid)) $this->setCid();
 
         if (!empty($this->cid))
             $path = '/../cache/cid/' . $this->cid . '_' . $suffix . '.json';
-        else if (!empty($this->epid))
+        elseif (!empty($this->epid))
             $path = '/../cache/epid/' . $this->epid . '_' . $suffix . '.json';
         else
             $path = '/../cache/cid/0' . '_' . $this->format . '.json';
@@ -290,7 +289,7 @@ class Bilibili
 
     private function bilibili_api()
     {
-        // video - flv,dash(all),mp4(only max)
+        $qn = 0;
         $api = array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/x/player/playurl',
@@ -298,66 +297,60 @@ class Bilibili
                 'avid'       => $this->aid,
                 'bvid'       => $this->bvid,
                 'cid'        => $this->cid,
-                'qn'         => $this->format == 'flv' ? $this->quality : 0,
+                'qn'         => $qn,
                 'type'       => $this->format == 'mp4' ? 'mp4' : '',
                 'otype'      => 'json',
                 'access_key' => $this->access_key
             ),
-            'format' => 'data'
+            'format' => ''
         );
-
-        switch ($this->format) {
-            case 'mp4':
-                $api['body'] += array(
-                    'platform'     => 'html5',
-                    'high_quality' => 1
-                );
-                break;
-            case 'flv':
-            case 'dash':
-                $api['body'] += array(
-                    'fnver' => 0,
-                    'fnval' => $this->format == 'dash' ? 16 : 0,
-                    'fourk' => 1
-                );
-                break;
+        if ($this->format == 'mp4') { // mp4
+            $api['body'] += array(
+                'platform'     => 'html5',
+                'high_quality' => 1
+            );
+        } else { // dash
+            $api['body'] += array(
+                'fnver' => 0,
+                'fnval' => 16,
+                'fourk' => 1
+            );
         }
-
         return $api;
     }
 
     private function bilibili_video_api($format = 'flv')
     {
-        // video - flv,mp4(only max),
         $this->setAppkey();
         $format = in_array($format, ['flv', 'mp4']) ? $format : 'flv';
-
-        $api = array(
-            'method' => 'GET',
-            'url'    => array(
-                'flv' => 'https://interface.bilibili.com/v2/playurl',
-                'mp4' => 'https://app.bilibili.com/v2/playurlproj'
-            )[$format],
-            'body'   => array(
-                'access_key' => $this->access_key,
-                'appkey'     => $this->appkey,
-                'cid'        => $this->cid,
-                'otype'      => 'json',
-                'qn'         => $this->quality,
-                'quality'    => $this->quality,
-                'type'       => ''
-            ),
-            'format' => ''
+        $url = array(
+            'flv' => 'https://interface.bilibili.com/v2/playurl',
+            'mp4' => 'https://app.bilibili.com/v2/playurlproj'
         );
-        $api['body'] += array('sign' => md5(http_build_query($api['body']) . $this->sec));
-
-        return $api;
+        $api_format = array( // todo
+            'flv' => '',
+            'mp4' => ''
+        );
+        $body = array(
+            'access_key' => $this->access_key,
+            'appkey'     => $this->appkey,
+            'cid'        => $this->cid,
+            'otype'      => 'json',
+            'qn'         => $this->quality,
+            'quality'    => $this->quality,
+            'type'       => ''
+        );
+        $body += array('sign' => md5(http_build_query($body) . $this->sec));
+        return array(
+            'method' => 'GET',
+            'url'    => $url[$format],
+            'body'   => $body,
+            'format' => $api_format[$format]
+        );
     }
 
     private function bilibili_bangumi_api()
     {
-        // bangumi - flv,dash(all),
-        // https://bangumi.bilibili.com/player/web_api/playurl
         return array(
             'method' => 'GET',
             'url'    => 'https://api.bilibili.com/pgc/player/web/playurl',
@@ -371,34 +364,10 @@ class Bilibili
                 'otype'      => 'json',
                 'ep_id'      => $this->epid,
                 'fnver'      => '0',
-                'fnval'      => $this->format == 'dash' ? 16 : 0,
+                'fnval'      => $this->fnval,
                 'access_key' => $this->access_key
             ),
-            'format' => 'result'
-        );
-    }
-
-    private function bangumi_season_id($media_id)
-    {
-        // media_id -> season_id
-        return array(
-            'method' => 'GET',
-            'url'    => 'https://api.bilibili.com/pgc/review/user',
-            'body'   => array(
-                'media_id' => $media_id
-            )
-        );
-    }
-
-    private function bangumi_cid($season_id)
-    {
-        // season_id -> all(cid)
-        return array(
-            'method' => 'GET',
-            'url'    => 'https://api.bilibili.com/pgc/web/season/section',
-            'body'   => array(
-                'season_id' => $season_id
-            )
+            'format' => ''
         );
     }
 
@@ -490,11 +459,11 @@ class Bilibili
     {
         return array(
             'Referer'         => 'https://www.bilibili.com/',
-            'Cookie'          => '_uuid=ECD29A42-D6E2-2C85-D76D-53E293C8053659853infoc; bfe_id=61a513175dc1ae8854a560f6b82b37af; CURRENT_BLACKGAP=1; CURRENT_FNVAL=80; CURRENT_QUALITY=80',
+            'Cookie'          => 'appver=1.5.9; os=osx; __remember_me=true; osver=%E7%89%88%E6%9C%AC%2010.13.5%EF%BC%88%E7%89%88%E5%8F%B7%2017F77%EF%BC%89;',
             'User-Agent'      => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/605.1.15 (KHTML, like Gecko)',
             'X-Real-IP'       => long2ip(mt_rand(1884815360, 1884890111)),
-            'Accept'          => 'application/json, text/plain, */*',
-            'Accept-Language' => 'zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7',
+            'Accept'          => '*/*',
+            'Accept-Language' => 'zh-CN,zh;q=0.8,gl;q=0.6,zh-TW;q=0.4',
             'Connection'      => 'keep-alive',
             'Content-Type'    => 'application/x-www-form-urlencoded',
         );
