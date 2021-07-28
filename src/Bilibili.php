@@ -581,27 +581,4 @@ class Bilibili
 
         return json_encode($result);
     }
-
-    public function test()
-    {
-        header('Content-type: application/json; charset=utf-8;');
-
-
-        //$api = $this->bilibili_video_api('mp4');
-        //$api = $this->bilibili_bangumi_api();
-        //$this->exec($api);
-        echo $this->result();
-
-        //$api['url'] .= '?' . http_build_query($api['body']);
-        //echo $api['url'];
-    }
 }
-
-// $bp = new Bilibili(); //video or bangumi 759050092
-// // 登陆av - 12227274
-// // 普通av - 759050092
-// // 高清av - 759050092 - 116
-// //aid(759050092)
-// $bp->aid(759050092);
-// $bp->page(1)->quality(80)->access_key('5f5995a00ce13c02acfdd2696b12ed71')->format('dash');
-// $bp->test();
