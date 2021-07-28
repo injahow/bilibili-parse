@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.0
+ * Version 0.4.1
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -170,7 +170,7 @@ class Bilibili
 
         if ($this->type == 'video') {
             if (empty($this->access_key) && $this->format != 'dash') {
-                $api = $this->bilibili_video_api($this->format);
+                $api = $this->bilibili_video_api();
             } else {
                 $api = $this->bilibili_api();
             }
