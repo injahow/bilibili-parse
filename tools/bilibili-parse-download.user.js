@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.6
+// @version      0.9.7
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -83,7 +83,7 @@
                 read: function (options) {
                     request_danmaku(options, cid);
                 },
-                send: function (options) {
+                send: function (options) { // ?
                     options.error('此脚本无法将弹幕同步到云端！');
                 }
             },
@@ -166,17 +166,22 @@
 
     function get_user_status() {
         if (window.__BILI_USER_INFO__) {
-            mid = window.__BILI_USER_INFO__.mid || '';
             is_login = window.__BILI_USER_INFO__.isLogin;
             vip_status = window.__BILI_USER_INFO__.vipStatus;
+            mid = window.__BILI_USER_INFO__.mid || '';
         } else if (window.__BiliUser__) {
-            mid = window.__BiliUser__.cache.data.mid || '';
             is_login = window.__BiliUser__.isLogin;
-            vip_status = window.__BiliUser__.cache.data.vipStatus;
+            if (window.__BiliUser__.cache) {
+                vip_status = window.__BiliUser__.cache.data.vipStatus;
+                mid = window.__BiliUser__.cache.data.mid || '';
+            } else {
+                vip_status = 0;
+                mid = '';
+            }
         } else {
-            mid = '';
             is_login = false;
             vip_status = 0;
+            mid = '';
         }
     }
 
@@ -195,10 +200,10 @@
 
     function get_quality() {
         let _q = 0, _q_max = 0;
-        if (!!(_q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')))) {
-            _q_max = parseInt($('li.bui-select-item')[0].dataset.value);
-        } else if (!!(_q = parseInt($('li.squirtle-select-item.active').attr('data-value')))) {
-            _q_max = parseInt($('li.squirtle-select-item')[0].dataset.value);
+        if (!!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
+            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
+        } else if (!!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
+            _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
         } else {
             _q = _q_max = 80;
         }
@@ -226,7 +231,8 @@
     }
 
     function refresh() {
-        window.Message.info('refresh...');
+        //window.Message.info('refresh...');
+        console.log('refresh...');
         !!$('#video_download')[0] && $('#video_download').hide();
         !!$('#video_download_2')[0] && $('#video_download_2').hide();
         recover_player();
@@ -236,7 +242,7 @@
         cid = ids.cid;
     }
 
-    // 参考：https://greasyfork.org/zh-CN/scripts/25718-%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6
+    // https://greasyfork.org/zh-CN/scripts/25718-%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6
     if (location.href.match(/^https:\/\/www\.mcbbs\.net\/template\/mcbbs\/image\/special_photo_bg\.png/) != null) {
         if (location.href.match('access_key') != null && window.opener != null) {
             window.stop();
@@ -485,7 +491,7 @@
         const config_html =
             '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
+            '<span style="font-size:20px"><b>bilibili视频下载 参数设置 <a style="text-decoration:underline;" href="javascript:;" onclick="window.MessageBox.alert(\'帮助!\');">获取帮助</a></b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
             `<input id="base_api" value="${_config.base_api}" style="width:50%;"><br/>` +
             '<small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small></div>' +
