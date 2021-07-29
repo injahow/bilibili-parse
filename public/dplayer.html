@@ -23,7 +23,7 @@
       if (res.ok) {
         res.json().then(data => {
           new DPlayer({
-            container: document.getElementById("dplayer1"),
+            container: document.getElementById('dplayer1'),
             video: {
               url: data.url.replace(/^https?\:\/\//i, 'https://'),
               type: 'auto'
