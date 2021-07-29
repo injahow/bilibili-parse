@@ -195,7 +195,7 @@ class Bilibili
 
         $data = json_decode($this->video(), true)[0];
         $raw = json_decode($this->raw, true);
-        if (isset($raw['code']) && $raw['code'] != 0) {
+        if (!empty($raw['code'])) {
             return $this->raw;
         } else {
             switch ($this->format) {
@@ -211,11 +211,12 @@ class Bilibili
                             }
                         }
 
-                        if ($find == 0) {
+                        if ($data['accept_quality'][0] >= 80 && $find == 0) { // ?
 
                             return json_encode(array(
                                 'code'    => 1,
-                                'message' => '可能需要会员或未知的quality'
+                                'accept_quality' => $data['accept_quality'],
+                                'message' => '可能需要会员或未知参数quality'
                             ));
                         }
 
@@ -238,7 +239,7 @@ class Bilibili
                 case 'flv':
 
                     if ($this->type == 'bangumi') {
-                        if (isset($data['format']) && $data['format'] == 'mp4') {
+                        if (isset($data['format']) && $data['format'] == 'mp4' && $data['quality'] != 16) {
 
                             return json_encode(array(
                                 'code'    => 1,
@@ -247,17 +248,21 @@ class Bilibili
                         }
                     }
 
+                    if ($data['accept_quality'][0] >= 80 && $this->quality != $data['quality']) {  // ?
+
+                        return json_encode(array(
+                            'code'    => 1,
+                            'accept_quality' => $data['accept_quality'],
+                            'message' => '可能需要会员或未知参数quality'
+                        ));
+                    }
+
                     $this->result = json_encode(array(
                         'code'           => 0,
                         'quality'        => $data['quality'],
                         'accept_quality' => $data['accept_quality'],
                         'url'            => $data['durl'][0]['url']
                     ));
-
-                    if ($this->quality != $data['quality']) {
-
-                        return $this->result;
-                    }
 
                     break;
 
