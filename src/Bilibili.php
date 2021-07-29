@@ -212,6 +212,7 @@ class Bilibili
                         }
 
                         if ($find == 0) {
+
                             return json_encode(array(
                                 'code'    => 1,
                                 'message' => '可能需要会员或未知的quality'
@@ -226,6 +227,7 @@ class Bilibili
                             'audio'          => $data['dash']['audio'][0]['baseUrl']
                         ));
                     } else { // ? durl
+
                         return json_encode(array(
                             'code'    => 1,
                             'message' => '可能是会员付费视频'
@@ -237,18 +239,12 @@ class Bilibili
 
                     if ($this->type == 'bangumi') {
                         if (isset($data['format']) && $data['format'] == 'mp4') {
+
                             return json_encode(array(
                                 'code'    => 1,
                                 'message' => '可能需要会员播放'
                             ));
                         }
-                    }
-
-                    if ($this->quality != $data['quality']) {
-                        return json_encode(array(
-                            'code'    => 1,
-                            'message' => '可能需要会员或未知的quality'
-                        ));
                     }
 
                     $this->result = json_encode(array(
@@ -257,6 +253,12 @@ class Bilibili
                         'accept_quality' => $data['accept_quality'],
                         'url'            => $data['durl'][0]['url']
                     ));
+
+                    if ($this->quality != $data['quality']) {
+
+                        return $this->result;
+                    }
+
                     break;
 
                 case 'mp4':
