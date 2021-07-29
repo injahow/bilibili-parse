@@ -125,11 +125,12 @@ class Bilibili
         return $this;
     }
 
-    public function cache($value = true, $type = 'file')
+    public function cache($value = true, $type = '')
     {
         $this->cache = $value;
-        $suppose = array('file', 'apcu');
-        $this->cache_type = in_array($type, $suppose) ? $type : 'file';
+        if (in_array($type, array('file', 'apcu'))) {
+            $this->cache_type = $type;
+        }
 
         return $this;
     }
