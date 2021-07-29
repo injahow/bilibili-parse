@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.3
+ * Version 0.4.4
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -445,7 +445,27 @@ class Bilibili
 
     private function setCid()
     {
-        if (!(empty($this->aid) && empty($this->bvid))) {
+        if (!empty($this->epid)) {
+            $api = array(
+                'method' => 'GET',
+                'url'    => 'https://api.bilibili.com/pgc/view/web/season',
+                'body'   => array(
+                    'ep_id'      => $this->epid,
+                    'access_key' => $this->access_key
+                ),
+                'format' => 'result.episodes'
+            );
+            $episodes = json_decode($this->exec($api), true);
+            if (!isset($episodes[0])) return;
+
+            foreach ($episodes as $episode) {
+                if ($episode['id'] == $this->epid) {
+                    $this->cid = $episode['cid'];
+
+                    return;
+                }
+            }
+        } else if (!(empty($this->aid) && empty($this->bvid))) {
             $api = array(
                 'method' => 'GET',
                 'url'    => 'https://api.bilibili.com/x/web-interface/view',
@@ -456,30 +476,16 @@ class Bilibili
                 ),
                 'format' => $this->type == 'bangumi' ? '' : 'data.pages.' . strval($this->page - 1)
             );
-        } else if (!empty($this->epid)) {
-            $api = array(
-                'method' => 'GET',
-                'url'    => 'https://api.bilibili.com/pgc/view/web/season',
-                'body'   => array(
-                    'ep_id'      => $this->epid,
-                    'access_key' => $this->access_key
-                ),
-                'format' => 'result.episodes.' . strval($this->page - 1)
-            );
-        } else {
-            return;
-        }
-        $res = json_decode($this->exec($api), true);
-        if (!isset($res[0])) return;
+            $res = json_decode($this->exec($api), true);
+            if (!isset($res[0])) return;
 
-        if ($this->type == 'bangumi') {
-            if (isset($res[0]['data'])) {
-                $this->cid = $res[0]['data']['cid'];
-            } else if (isset($res[0]['cid'])) {
+            if ($this->type == 'bangumi') {
+                if (isset($res[0]['data'])) {
+                    $this->cid = $res[0]['data']['cid'];
+                }
+            } else
                 $this->cid = $res[0]['cid'];
-            }
-        } else
-            $this->cid = $res[0]['cid'];
+        }
     }
 
     private function setAppkey()
