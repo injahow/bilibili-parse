@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.2
+ * Version 0.4.3
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -171,7 +171,7 @@ class Bilibili
         }
 
         if ($this->type == 'video') {
-            if (empty($this->access_key) && !$this->has_cookie) {
+            if (empty($this->access_key) && !$this->has_cookie && $this->format != 'dash') {
                 $api = $this->bilibili_video_api();
             } else {
                 $api = $this->bilibili_api();
@@ -289,17 +289,15 @@ class Bilibili
     private function getCacheName()
     {
         // ! mkdir '/cache/*'
-        if ($this->format == 'flv')
-            $suffix = $this->quality . '_' . $this->format;
+        if ($this->format == 'mp4')
+            $suffix = 'mp4';
         else
-            $suffix = $this->format;
+            $suffix = $this->quality . '_' . $this->format;
 
         if (!isset($this->cid)) $this->setCid();
 
         if (!empty($this->cid))
             $path = '/../cache/cid/' . $this->cid . '_' . $suffix . '.json';
-        else if (!empty($this->epid))
-            $path = '/../cache/epid/' . $this->epid . '_' . $suffix . '.json';
         else
             $path = '/../cache/cid/0' . '_' . $this->format . '.json';
 
