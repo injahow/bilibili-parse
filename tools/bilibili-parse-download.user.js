@@ -200,9 +200,9 @@
 
     function get_quality() {
         let _q = 0, _q_max = 0;
-        if (!!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
+        if (!!$('li.bui-select-item')[0] && !!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
             _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
-        } else if (!!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
+        } else if (!!$('li.squirtle-select-item')[0] && !!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
             _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
         } else {
             _q = _q_max = 80;
@@ -290,7 +290,7 @@
                 }
             },
             error: () => {
-                window.MessageBox.alert('授权出错!');
+                window.Message.danger('授权出错!');
                 window.auth_clicked = false;
             }
         });
@@ -310,19 +310,19 @@
         $.ajax(`${config.base_api}/auth/?act=logout&mid=${mid}`, {
             type: 'GET',
             success: () => {
-                window.Message.success('取消授权成功!')
+                window.Message.success('取消成功')
                 localStorage.setItem('bp_access_key', '');
                 $('#auth').val('0');
                 window.auth_clicked = false;
             },
             error: () => {
-                window.Message.danger('取消授权失败!');
+                window.Message.danger('取消失败');
                 window.auth_clicked = false;
             }
         });
     }
     window.bp_show_login_help = function () {
-        window.MessageBox.confirm('进行授权之后将可以在请求地址时正常享有会员的权益（例如能够获取用户已经付费的番剧），你可以随时在这里授权或取消授权，不进行授权不会影响脚本的正常使用，但可能会出现大量请求失败的提示，是否需要授权？', () => {
+        window.MessageBox.confirm('进行授权之后将能在请求地址时正常享有会员的权益（例如能够获取用户已经付费的番剧），你可以随时在这里授权或取消授权，不进行授权不会影响脚本的正常使用，但可能会出现大量请求失败的提示，是否需要授权？', () => {
             window.bp_show_login();
         });
     }
@@ -342,7 +342,7 @@
                     window.auth_clicked = false;
                 },
                 error: () => {
-                    window.MessageBox.danger('授权失败!');
+                    window.Message.danger('授权失败!');
                     window.auth_clicked = false;
                 }
             });
@@ -366,7 +366,9 @@
         };
         window.MessageBox = {
             alert: (html, affirm) => {
-                messageBox({ html, callback: { affirm } }, 'alert');
+                messageBox({
+                    html, callback: { affirm }
+                }, 'alert');
             },
             confirm: (html, affirm, cancel) => {
                 messageBox({
@@ -491,7 +493,7 @@
         const config_html =
             '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            '<span style="font-size:20px"><b>bilibili视频下载 参数设置 <a style="text-decoration:underline;" href="javascript:;" onclick="window.MessageBox.alert(\'帮助!\');">获取帮助</a></b></span>' +
+            '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
             `<input id="base_api" value="${_config.base_api}" style="width:50%;"><br/>` +
             '<small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small></div>' +
@@ -588,8 +590,10 @@
         q = quality.q;
 
         get_user_status();
-        if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
-            q = quality.q_max > 80 ? 80 : quality.q_max;
+        if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force === '1') {
+            if (!is_login) {
+                q = quality.q_max > 80 ? 80 : quality.q_max;
+            }
             !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         }
 
