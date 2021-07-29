@@ -8,7 +8,7 @@ $bv = isset($_GET['bv']) ? $_GET['bv'] : '';
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
 
 if (!$av && !$ep && !$bv) {
-    include __DIR__ . '/public/readme.php';
+    include __DIR__ . '/public/readme.html';
     exit;
 }
 
@@ -17,7 +17,7 @@ $otype = in_array($otype, ['json', 'url', 'dplayer']) ? $otype : 'json';
 
 // only for mp4
 if ($otype == 'dplayer') {
-    include __DIR__ . '/public/dplayer.php';
+    include __DIR__ . '/public/dplayer.html';
     exit;
 }
 
@@ -37,8 +37,7 @@ $bp->cache(true)->cache_time(3600);
 // need config apcu
 // $bp->cache(true, 'apcu')->cache_time(3600);
 
-$bp->epid($ep);
-$bp->aid($av)->bvid($bv)->page($p);
+$bp->aid($av)->bvid($bv)->epid($ep)->page($p);
 $bp->quality($q)->format($format);
 
 // dash

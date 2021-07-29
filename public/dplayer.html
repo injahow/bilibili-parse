@@ -1,0 +1,37 @@
+<html>
+
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <title>bilibili-parse播放测试</title>
+</head>
+
+<body>
+  <div id="dplayer1"></div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
+<script>
+  const params = window.location.search.substring(1).split('&')
+  const map = {
+    av: '', bv: '', p: '1'
+  }
+  for (let i = 0; i < params.length; i++) {
+    const pair = params[i].split('=')
+    map[pair[0]] = pair[1]
+  }
+  fetch(`./?av=${map['av']}&bv=${map['bv']}&p=${map['p']}&format=mp4`).then(res => {
+    if (res.ok) {
+      res.json().then(data => {
+        new DPlayer({
+          container: document.getElementById("dplayer1"),
+          video: {
+            url: data.url,
+            type: 'auto'
+          }
+        })
+      })
+    }
+  })
+</script>
+
+</html>
