@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.7
+// @version      0.9.8
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -61,7 +61,10 @@
     }
 
     function replace_player(url, url_2) {
+        // 恢复原视频
         recover_player();
+        // 暂停原视频
+        !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         if (!!$('#bilibiliPlayer')[0]) {
             $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
             $('#bilibiliPlayer').hide();
@@ -201,11 +204,14 @@
     function get_quality() {
         let _q = 0, _q_max = 0;
         if (!!$('li.bui-select-item')[0] && !!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
-            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value'));
+            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')) || _q_max > 80 ? 80 : _q_max;
         } else if (!!$('li.squirtle-select-item')[0] && !!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
-            _q = parseInt($('li.squirtle-select-item.active').attr('data-value'));
+            _q = parseInt($('li.squirtle-select-item.active').attr('data-value')) || _q_max > 80 ? 80 : _q_max;
         } else {
             _q = _q_max = 80;
+        }
+        if (!is_login) {
+            _q = _q_max > 80 ? 80 : _q_max;
         }
         return { q: _q, q_max: _q_max };
     }
@@ -240,6 +246,7 @@
         const ids = get_all_id();
         aid = ids.aid;
         cid = ids.cid;
+        q = get_quality().q;
     }
 
     // https://greasyfork.org/zh-CN/scripts/25718-%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6
@@ -482,7 +489,7 @@
         };
         window.onbeforeunload = () => {
             window.my_click_event();
-        }
+        };
         const option = ['', 'selected'];
         const config_css =
             '<style>' +
@@ -586,16 +593,8 @@
             window.Message.warning('aid获取出错！');
         }
 
-        const quality = get_quality();
-        q = quality.q;
-
         get_user_status();
-        if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force === '1') {
-            if (!is_login) {
-                q = quality.q_max > 80 ? 80 : quality.q_max;
-            }
-            !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
-        }
+        q = get_quality().q;
 
         let type;
         if (flag_name === 'ep' || flag_name === 'ss') {
@@ -616,7 +615,7 @@
             if (url && url !== '#') {
                 $('#video_download').show();
                 config.format === 'dash' && $('#video_download_2').show();
-                if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
+                if (!is_login || (is_login && !vip_status && need_vip) || config.replace_force === '1') {
                     !$('#my_dplayer')[0] && replace_player(url, url_2);
                 }
             }
@@ -641,7 +640,7 @@
                         $('#video_url_2').attr('href', url_2);
                         $('#video_download_2').show();
                     }
-                    if (!is_login || (is_login && vip_status === 0 && need_vip) || config.replace_force == '1') {
+                    if (!is_login || (is_login && !vip_status && need_vip) || config.replace_force === '1') {
                         replace_player(url, url_2);
                     }
                 } else {
@@ -679,12 +678,17 @@
         refresh();
     });
 
-    // 监听aid 右侧推荐
+    setInterval(function () {
+        if (q !== get_quality().q) {
+            refresh();
+        }
+    }, 1000);
+
+    // 监听aid
     $('body').on('click', '.rec-list', function () {
         refresh();
     });
 
-    // 监听aid 视频内部推荐
     $('body').on('click', '.bilibili-player-ending-panel-box-videos', function () {
         refresh();
     });
