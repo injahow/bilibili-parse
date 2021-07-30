@@ -7,8 +7,11 @@ $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
 $bv = isset($_GET['bv']) ? $_GET['bv'] : '';
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
 
-if (!$av && !$ep && !$bv) {
-    include __DIR__ . '/public/readme.html';
+if (!$av && !$bv && !$ep) {
+    $file_path = __DIR__ . '/public/readme.html';
+    if (file_exists($file_path)) {
+        echo file_get_contents($file_path);
+    }
     exit;
 }
 
@@ -17,7 +20,10 @@ $otype = in_array($otype, ['json', 'url', 'dplayer']) ? $otype : 'json';
 
 // only for mp4
 if ($otype == 'dplayer') {
-    include __DIR__ . '/public/dplayer.html';
+    $file_path = __DIR__ . '/public/dplayer.html';
+    if (file_exists($file_path)) {
+        echo file_get_contents($file_path);
+    }
     exit;
 }
 
