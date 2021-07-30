@@ -27,17 +27,17 @@
   <article class="markdown-body">
     <div id="content"></div>
   </article>
-</body>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script>
-  fetch('./README.md').then(res => {
-    if (res.ok) {
-      res.text().then(text => {
-        document.getElementById('content').innerHTML = marked(text)
-      })
-    }
-  })
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    fetch('./README.md').then(res => {
+      if (res.ok) {
+        res.text().then(text => {
+          document.getElementById('content').innerHTML = marked(text)
+        })
+      }
+    })
+  </script>
+</body>
 
 </html>
