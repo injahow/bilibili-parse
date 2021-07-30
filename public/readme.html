@@ -27,12 +27,17 @@
   <article class="markdown-body">
     <div id="content"></div>
   </article>
-
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script>
-    document.getElementById('content').innerHTML =
-      marked(`<?php echo file_get_contents(__DIR__ . '/../README.md');?>`);
-  </script>
 </body>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  fetch('./README.md').then(res => {
+    if (res.ok) {
+      res.text().then(text => {
+        document.getElementById('content').innerHTML = marked(text)
+      })
+    }
+  })
+</script>
 
 </html>
