@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.10
+// @version      1.0.0
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -167,7 +167,7 @@
         }
     }
 
-    function get_user_status() {
+    function user_status_init() {
         if (window.__BILI_USER_INFO__) {
             is_login = window.__BILI_USER_INFO__.isLogin;
             vip_status = window.__BILI_USER_INFO__.vipStatus;
@@ -218,7 +218,7 @@
 
     function recover_player() {
         if (window.my_dplayer) {
-            window.Message.info('恢复播放器');
+            utils.Message.info('恢复播放器');
             window.my_dplayer.destroy();
             window.my_dplayer = null;
             $('#my_dplayer').remove();
@@ -237,7 +237,7 @@
     }
 
     function refresh() {
-        //window.Message.info('refresh...');
+        //utils.Message.info('refresh...');
         console.log('refresh...');
         !!$('#video_download')[0] && $('#video_download').hide();
         !!$('#video_download_2')[0] && $('#video_download_2').hide();
@@ -256,16 +256,47 @@
             document.children[0].innerHTML = '<title>bilibili-parse - 授权</title><meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
             window.opener.postMessage('bilibili-parse-login-credentials: ' + location.href, '*');
         }
-        return
+        return;
+    }
+    function check_login_status() {
+        !localStorage.getItem('bp_remind_login') && localStorage.setItem('bp_remind_login', '1');
+        if (is_login) {
+            if (config.base_api !== localStorage.getItem('bp_pre_base_api') || localStorage.getItem('bp_remind_login') === '1') {
+                if (!localStorage.getItem('bp_access_key')) {
+                    localStorage.setItem('bp_remind_login', '0');
+                    utils.MessageBox.confirm('注意：当前脚本未进行账号授权，无法请求1080P以上的清晰度；如果你是大会员或承包过这部番，授权即可解锁全部清晰度；是否需要进行账号授权？', () => {
+                        window.bp_show_login();
+                    });
+                }
+            } else if (Date.now() - parseInt(localStorage.getItem('bp_auth_time')) > 24 * 60 * 60 * 1000) {
+                // check key
+                $.ajax(`${config.base_api}/auth/?act=check&access_key=${localStorage.getItem('bp_access_key')}`, {
+                    type: 'GET',
+                    dataType: 'json',
+                    success: (res) => {
+                        if (res.code) {
+                            utils.MessageBox.alert('账号授权已失效，准备重新授权！', () => {
+                                localStorage.setItem('bp_access_key', '');
+                                window.bp_show_login();
+                            });
+                        }
+                    },
+                    error: () => {
+                        utils.Message.danger('key检查失败');
+                    }
+                });
+            }
+        }
+        localStorage.setItem('bp_pre_base_api', config.base_api);
     }
     window.bp_show_login = function () {
         if (window.auth_clicked) {
-            window.Message.info('(^・ω・^)~喵喵喵~');
+            utils.Message.info('(^・ω・^)~喵喵喵~');
             return;
         }
         window.auth_clicked = true;
         if (localStorage.getItem('bp_access_key')) {
-            window.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
+            utils.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
                 login();
             }, () => {
                 window.auth_clicked = false;
@@ -289,7 +320,7 @@
                     auth_window.location.href = data.data.confirm_uri;
                 } else {
                     auth_window.close();
-                    window.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
+                    utils.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                         location.href = 'https://passport.bilibili.com/login';
                     }, () => {
                         window.auth_clicked = false;
@@ -297,39 +328,39 @@
                 }
             },
             error: () => {
-                window.Message.danger('授权出错!');
+                utils.Message.danger('授权出错!');
                 window.auth_clicked = false;
             }
         });
     }
     window.bp_show_logout = function () {
         if (window.auth_clicked) {
-            window.Message.info('(^・ω・^)~喵喵喵~');
+            utils.Message.info('(^・ω・^)~喵喵喵~');
             return;
         }
         window.auth_clicked = true;
         if (!localStorage.getItem('bp_access_key')) {
-            window.MessageBox.alert('没有发现授权记录');
+            utils.MessageBox.alert('没有发现授权记录');
             window.auth_clicked = false;
             return;
         }
-        get_user_status();
         $.ajax(`${config.base_api}/auth/?act=logout&mid=${mid}`, {
             type: 'GET',
             success: () => {
-                window.Message.success('取消成功')
+                utils.Message.success('取消成功')
                 localStorage.setItem('bp_access_key', '');
+                localStorage.setItem('bp_auth_time', '');
                 $('#auth').val('0');
                 window.auth_clicked = false;
             },
             error: () => {
-                window.Message.danger('取消失败');
+                utils.Message.danger('取消失败');
                 window.auth_clicked = false;
             }
         });
     }
     window.bp_show_login_help = function () {
-        window.MessageBox.confirm('进行授权之后将能在请求地址时正常享有会员的权益（例如能够获取用户已经付费的番剧），你可以随时在这里授权或取消授权，不进行授权不会影响脚本的正常使用，但可能会出现大量请求失败的提示，是否需要授权？', () => {
+        utils.MessageBox.confirm('进行授权之后将能在请求地址时正常享有会员的权益（例如能够获取用户已经付费的番剧），你可以随时在这里授权或取消授权，不进行授权不会影响脚本的正常使用，但可能会出现大量请求失败的提示，是否需要授权？', () => {
             window.bp_show_login();
         });
     }
@@ -340,16 +371,16 @@
             (_a = window.auth_window) === null || _a === void 0 ? void 0 : _a.close();
             let url = e.data.split(': ')[1];
             localStorage.setItem('bp_access_key', new URL(url).searchParams.get('access_key'));
-            get_user_status();
+            localStorage.setItem('bp_auth_time', Date.now());
             $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/?act=login&vip_status=${vip_status}&`), {
                 dataType: 'json',
                 success: () => {
-                    window.Message.success('授权成功!');
+                    utils.Message.success('授权成功!');
                     $('#auth').val('1');
                     window.auth_clicked = false;
                 },
                 error: () => {
-                    window.Message.danger('授权失败!');
+                    utils.Message.danger('授权失败!');
                     window.auth_clicked = false;
                 }
             });
@@ -357,7 +388,7 @@
     });
 
     function components_init() {
-        window.Message = {
+        utils.Message = {
             success: (html) => {
                 message(html, 'success');
             },
@@ -371,7 +402,7 @@
                 message(html, 'info');
             }
         };
-        window.MessageBox = {
+        utils.MessageBox = {
             alert: (html, affirm) => {
                 messageBox({
                     html, callback: { affirm }
@@ -490,6 +521,29 @@
         window.onbeforeunload = () => {
             window.my_click_event();
         };
+        window.bp_show_help = () => {
+            if (window.help_clicked) {
+                utils.Message.info('(^・ω・^)~喵喵喵~');
+                return;
+            }
+            window.help_clicked = true;
+            $.ajax(`${config.base_api}/auth/?act=help`, {
+                dataType: 'text',
+                success: (result) => {
+                    if (result) {
+                        utils.MessageBox.alert(result);
+                    } else {
+                        utils.Message.warning('获取失败');
+                    }
+                    window.help_clicked = false;
+                },
+                error: (e) => {
+                    utils.Message.danger('请求异常');
+                    window.help_clicked = false;
+                    console.log('error', e);
+                }
+            });
+        };
         const option = ['', 'selected'];
         const config_css =
             '<style>' +
@@ -500,7 +554,7 @@
         const config_html =
             '<div id="my_config" style="display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
+            '<span style="font-size:20px"><b>bilibili视频下载 参数设置 <a style="text-decoration:underline;" href="javascript:;" onclick="bp_show_help()">&lt;获取帮助|脚本通知&gt;</a></b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
             `<input id="base_api" value="${_config.base_api}" style="width:50%;"><br/>` +
             '<small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small></div>' +
@@ -539,6 +593,10 @@
     config_init();
 
     // components
+    const utils = {
+        Message: {},
+        MessageBox: {}
+    }
     components_init();
 
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
@@ -567,7 +625,8 @@
             $('#toolbar_module').after(my_toolbar);
         }
         get_video_status();
-        get_user_status();
+        user_status_init();
+        check_login_status();
     }, 3000);
 
     $('body').on('click', '#setting_btn', function () {
@@ -590,10 +649,9 @@
         aid = ids.aid;
         cid = ids.cid;
         if (!aid) { // 异常
-            window.Message.warning('aid获取出错！');
+            utils.Message.warning('aid获取出错！');
         }
 
-        get_user_status();
         q = get_quality().q;
 
         let type;
@@ -609,7 +667,7 @@
         }
 
         if (api_url === api_url_temp && new_config_str === new_config_str_temp) {
-            window.Message.warning('重复请求');
+            utils.Message.warning('(^・ω・^)~喵喵喵~');
             const url = $('#video_url').attr('href');
             const url_2 = $('#video_url_2').attr('href');
             if (url && url !== '#') {
@@ -626,12 +684,12 @@
         api_url_temp = api_url;
         new_config_str_temp = new_config_str;
 
-        window.Message.info('开始请求');
+        utils.Message.info('开始请求');
         $.ajax(api_url, {
             dataType: 'json',
             success: (result) => {
                 if (result && result.code === 0) {
-                    window.Message.success('请求成功');
+                    utils.Message.success('请求成功');
                     const url = config.format === 'dash' ? result.video.replace(/^https?\:\/\//i, 'https://') : result.url.replace(/^https?\:\/\//i, 'https://');
                     const url_2 = config.format === 'dash' ? result.audio.replace(/^https?\:\/\//i, 'https://') : '#';
                     $('#video_url').attr('href', url);
@@ -644,11 +702,11 @@
                         replace_player(url, url_2);
                     }
                 } else {
-                    window.Message.warning('请求失败：' + result.message);
+                    utils.Message.warning('请求失败：' + result.message);
                 }
             },
             error: (e) => {
-                window.Message.danger('请求异常');
+                utils.Message.danger('请求异常');
                 console.log('error', e);
             }
         });
