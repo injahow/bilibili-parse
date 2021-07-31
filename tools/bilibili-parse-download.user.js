@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.0.0
+// @version      1.0.1
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -261,14 +261,14 @@
     function check_login_status() {
         !localStorage.getItem('bp_remind_login') && localStorage.setItem('bp_remind_login', '1');
         if (is_login) {
-            if (config.base_api !== localStorage.getItem('bp_pre_base_api') || localStorage.getItem('bp_remind_login') === '1') {
+            if (localStorage.getItem('bp_remind_login') === '1') {
                 if (!localStorage.getItem('bp_access_key')) {
                     localStorage.setItem('bp_remind_login', '0');
                     utils.MessageBox.confirm('注意：当前脚本未进行账号授权，无法请求1080P以上的清晰度；如果你是大会员或承包过这部番，授权即可解锁全部清晰度；是否需要进行账号授权？', () => {
                         window.bp_show_login();
                     });
                 }
-            } else if (Date.now() - parseInt(localStorage.getItem('bp_auth_time')) > 24 * 60 * 60 * 1000) {
+            } else if (config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(localStorage.getItem('bp_auth_time')) > 24 * 60 * 60 * 1000)) {
                 // check key
                 $.ajax(`${config.base_api}/auth/?act=check&access_key=${localStorage.getItem('bp_access_key')}`, {
                     type: 'GET',
