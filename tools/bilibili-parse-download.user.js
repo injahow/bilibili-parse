@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.8
+// @version      0.9.9
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -204,9 +204,9 @@
     function get_quality() {
         let _q = 0, _q_max = 0;
         if (!!$('li.bui-select-item')[0] && !!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
-            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')) || _q_max > 80 ? 80 : _q_max;
+            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')) || (_q_max > 80 ? 80 : _q_max);
         } else if (!!$('li.squirtle-select-item')[0] && !!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
-            _q = parseInt($('li.squirtle-select-item.active').attr('data-value')) || _q_max > 80 ? 80 : _q_max;
+            _q = parseInt($('li.squirtle-select-item.active').attr('data-value')) || (_q_max > 80 ? 80 : _q_max);
         } else {
             _q = _q_max = 80;
         }
