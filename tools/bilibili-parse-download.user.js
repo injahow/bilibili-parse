@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      0.9.9
+// @version      0.9.10
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -398,7 +398,7 @@
             '</style>';
         const components_html =
             '<div class="message-bg"></div>' +
-            '<div id="message_box" style="opacity:0;display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
+            '<div id="message_box" style="opacity:0;display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:400px;transform:translate(-50%,-50%);cursor:default;">' +
             '<span style="font-size:20px"><b>提示：</b></span>' +
             '<div id="message_box_context" style="margin:2% 0;">......</div><br/><br/>' +
@@ -498,7 +498,7 @@
             'a.setting-context{margin:0 2%;color:blue;}a.setting-context:hover{color:red;}' +
             '</style>';
         const config_html =
-            '<div id="my_config" style="display:none;position:fixed;inset:0px;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
+            '<div id="my_config" style="display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
             '<span style="font-size:20px"><b>bilibili视频下载 参数设置</b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
