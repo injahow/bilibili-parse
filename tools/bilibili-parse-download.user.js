@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.0.2
+// @version      1.0.3
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -27,6 +27,7 @@
     let api_url, api_url_temp, new_config_str, new_config_str_temp;
     let flag_name = '', need_vip = false, vip_need_pay = false;
     let is_login = false, vip_status = 0, mid = '';
+    let bili_player_id;
 
     function request_danmaku(options, _cid) {
         $.ajax(`https://api.bilibili.com/x/v1/dm/list.so?oid=${_cid}`, {
@@ -66,9 +67,11 @@
         // 暂停原视频
         !!$('video[crossorigin="anonymous"]')[0] && $('video[crossorigin="anonymous"]')[0].pause();
         if (!!$('#bilibiliPlayer')[0]) {
+            bili_player_id = '#bilibiliPlayer';
             $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
             $('#bilibiliPlayer').hide();
-        } else {
+        } else if (!!$('#bilibili-player')[0]){
+            bili_player_id = '#bilibili-player';
             $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
             $('#bilibili-player').hide();
         }
@@ -227,11 +230,8 @@
                 window.my_dplayer_2 = null;
                 $('#my_dplayer_2').remove();
             }
-            if (!!$('#bilibiliPlayer')[0]) {
-                $('#bilibiliPlayer').show();
-            } else {
-                $('#bilibili-player').show();
-            }
+            !!bili_player_id && $(bili_player_id).show();
+            $('#danmukuBox').show();
             /*!!$('#player_mask_module')[0] && $('#player_mask_module').show();*/
         }
     }
