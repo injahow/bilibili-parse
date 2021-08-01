@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.0.1
+// @version      1.0.2
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -263,28 +263,30 @@
         if (is_login) {
             if (localStorage.getItem('bp_remind_login') === '1') {
                 if (!localStorage.getItem('bp_access_key')) {
-                    localStorage.setItem('bp_remind_login', '0');
                     utils.MessageBox.confirm('注意：当前脚本未进行账号授权，无法请求1080P以上的清晰度；如果你是大会员或承包过这部番，授权即可解锁全部清晰度；是否需要进行账号授权？', () => {
                         window.bp_show_login();
                     });
                 }
+                localStorage.setItem('bp_remind_login', '0');
             } else if (config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(localStorage.getItem('bp_auth_time')) > 24 * 60 * 60 * 1000)) {
                 // check key
-                $.ajax(`${config.base_api}/auth/?act=check&access_key=${localStorage.getItem('bp_access_key')}`, {
-                    type: 'GET',
-                    dataType: 'json',
-                    success: (res) => {
-                        if (res.code) {
-                            utils.MessageBox.alert('账号授权已失效，准备重新授权！', () => {
-                                localStorage.setItem('bp_access_key', '');
-                                window.bp_show_login();
-                            });
+                if (localStorage.getItem('bp_access_key')) {
+                    $.ajax(`${config.base_api}/auth/?act=check&access_key=${localStorage.getItem('bp_access_key')}`, {
+                        type: 'GET',
+                        dataType: 'json',
+                        success: (res) => {
+                            if (res.code) {
+                                utils.MessageBox.alert('账号授权已失效，准备重新授权！', () => {
+                                    localStorage.setItem('bp_access_key', '');
+                                    window.bp_show_login();
+                                });
+                            }
+                        },
+                        error: () => {
+                            utils.Message.danger('key检查失败');
                         }
-                    },
-                    error: () => {
-                        utils.Message.danger('key检查失败');
-                    }
-                });
+                    });
+                }
             }
         }
         localStorage.setItem('bp_pre_base_api', config.base_api);
@@ -370,12 +372,12 @@
         if (e.data.split(':')[0] === 'bilibili-parse-login-credentials') {
             (_a = window.auth_window) === null || _a === void 0 ? void 0 : _a.close();
             let url = e.data.split(': ')[1];
-            localStorage.setItem('bp_access_key', new URL(url).searchParams.get('access_key'));
-            localStorage.setItem('bp_auth_time', Date.now());
             $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/?act=login&vip_status=${vip_status}&`), {
                 dataType: 'json',
                 success: () => {
                     utils.Message.success('授权成功!');
+                    localStorage.setItem('bp_access_key', new URL(url).searchParams.get('access_key'));
+                    localStorage.setItem('bp_auth_time', Date.now());
                     $('#auth').val('1');
                     window.auth_clicked = false;
                 },
