@@ -74,14 +74,6 @@
             bili_video_stop();
             const bili_video = $('video[crossorigin="anonymous"]')[0];
             bili_video.addEventListener('play', bili_video_stop, false);
-            /*$(document).keydown(function (event) {
-                if (!!(['32', '37', '38', '39', '40'].find((e) => {
-                    return e === event.keyCode;
-                }))) {
-                    bili_video.pause();
-                }
-            });*/
-
         }
         if (!!$('#bilibiliPlayer')[0]) {
             bili_player_id = '#bilibiliPlayer';
