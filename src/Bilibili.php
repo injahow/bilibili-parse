@@ -215,9 +215,9 @@ class Bilibili
                         if ($data['accept_quality'][0] >= 80 && $find == 0) { // ?
 
                             return json_encode(array(
-                                'code'    => 1,
+                                'code'           => 1,
                                 'accept_quality' => $data['accept_quality'],
-                                'message' => '可能需要会员或未知参数quality'
+                                'message'        => '可能需要会员或未知参数quality'
                             ));
                         }
 
@@ -252,9 +252,9 @@ class Bilibili
                     if ($data['accept_quality'][0] >= 80 && $this->quality != $data['quality']) {  // ?
 
                         return json_encode(array(
-                            'code'    => 1,
+                            'code'           => 1,
                             'accept_quality' => $data['accept_quality'],
-                            'message' => '可能需要会员或未知参数quality'
+                            'message'        => '可能需要会员或未知参数quality'
                         ));
                     }
 
@@ -419,7 +419,7 @@ class Bilibili
         );
     }
 
-    private function setCache($data)
+    public function setCache($data)
     {
         $file_name = $this->getCacheName();
         if ($this->cache_type == 'file') {
@@ -436,7 +436,7 @@ class Bilibili
         }
     }
 
-    private function getCache()
+    public function getCache()
     {
         $file_name = $this->getCacheName();
         if ($this->cache_type == 'file') {
