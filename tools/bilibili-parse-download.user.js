@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.1.0
+// @version      1.1.2
 // @description  支持下载番剧与用户上传视频，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -99,7 +99,7 @@
                     request_danmaku(options, cid);
                 },
                 send: function (options) { // ?
-                    options.error('此脚本无法将弹幕同步到云端！');
+                    options.error('此脚本无法将弹幕同步到云端');
                 }
             },
             contextmenu: [
@@ -250,26 +250,35 @@
     }
     function check_login_status() {
         !localStorage.getItem('bp_remind_login') && localStorage.setItem('bp_remind_login', '1');
+        const access_key = localStorage.getItem('bp_access_key');
+        let auth_time = localStorage.getItem('bp_auth_time');
+        if (access_key && !auth_time) {
+            localStorage.setItem('bp_auth_time', Date.now());
+            auth_time = localStorage.getItem('bp_auth_time');
+        }
         if (user_status.is_login()) {
             if (localStorage.getItem('bp_remind_login') === '1') {
-                if (!localStorage.getItem('bp_access_key')) {
+                if (!access_key) {
                     utils.MessageBox.confirm('当前脚本未进行账号授权，无法请求1080P以上的清晰度；如果你是大会员或承包过这部番，授权即可解锁全部清晰度；是否需要进行账号授权？', () => {
                         window.bp_show_login();
                     });
                 }
                 localStorage.setItem('bp_remind_login', '0');
-            } else if (config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(localStorage.getItem('bp_auth_time')) > 24 * 60 * 60 * 1000)) {
+            } else if (config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(auth_time) > 24 * 60 * 60 * 1000)) {
                 // check key
-                if (localStorage.getItem('bp_access_key')) {
-                    $.ajax(`${config.base_api}/auth/?act=check&access_key=${localStorage.getItem('bp_access_key')}`, {
+                if (access_key) {
+                    $.ajax(`${config.base_api}/auth/?act=check&access_key=${access_key}`, {
                         type: 'GET',
                         dataType: 'json',
                         success: (res) => {
                             if (res.code) {
-                                utils.MessageBox.alert('账号授权已失效，准备重新授权！', () => {
+                                utils.MessageBox.alert('账号授权已失效，准备重新授权', () => {
                                     localStorage.setItem('bp_access_key', '');
+                                    localStorage.setItem('bp_auth_time', '');
                                     window.bp_show_login();
                                 });
+                            } else {
+                                localStorage.setItem('bp_auth_time', Date.now());
                             }
                         },
                         error: () => {
@@ -320,7 +329,7 @@
                 }
             },
             error: () => {
-                utils.Message.danger('授权出错!');
+                utils.Message.danger('授权出错');
                 window.auth_clicked = false;
             }
         });
@@ -338,15 +347,20 @@
         }
         $.ajax(`${config.base_api}/auth/?act=logout&mid=${user_status.mid()}`, {
             type: 'GET',
-            success: () => {
-                utils.Message.success('取消成功')
-                localStorage.setItem('bp_access_key', '');
-                localStorage.setItem('bp_auth_time', '');
-                $('#auth').val('0');
+            dataType: 'json',
+            success: (res) => {
+                if (!res.code) {
+                    utils.Message.success('取消成功')
+                    localStorage.setItem('bp_access_key', '');
+                    localStorage.setItem('bp_auth_time', '');
+                    $('#auth').val('0');
+                } else {
+                    utils.Message.warning('取消失败');
+                }
                 window.auth_clicked = false;
             },
             error: () => {
-                utils.Message.danger('取消失败');
+                utils.Message.danger('请求失败');
                 window.auth_clicked = false;
             }
         });
@@ -363,16 +377,21 @@
             (_a = window.auth_window) === null || _a === void 0 ? void 0 : _a.close();
             let url = e.data.split(': ')[1];
             $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/?act=login&vip_status=${user_status.vip_status()}&`), {
+                type: 'GET',
                 dataType: 'json',
-                success: () => {
-                    utils.Message.success('授权成功!');
-                    localStorage.setItem('bp_access_key', new URL(url).searchParams.get('access_key'));
-                    localStorage.setItem('bp_auth_time', Date.now());
-                    $('#auth').val('1');
+                success: (res) => {
+                    if (!res.code) {
+                        utils.Message.success('授权成功');
+                        localStorage.setItem('bp_access_key', new URL(url).searchParams.get('access_key'));
+                        localStorage.setItem('bp_auth_time', Date.now());
+                        $('#auth').val('1');
+                    } else {
+                        utils.Message.success('授权失败');
+                    }
                     window.auth_clicked = false;
                 },
                 error: () => {
-                    utils.Message.danger('授权失败!');
+                    utils.Message.danger('请求失败');
                     window.auth_clicked = false;
                 }
             });
@@ -401,6 +420,7 @@
                 config = old_config;
             }
         }
+        new_config_str_temp = new_config_str = JSON.stringify(config);
         const _config = config;
         window.my_click_event = () => {
             config.base_api = $('#base_api').val();
@@ -461,13 +481,13 @@
             '</select><br/><small>注意：番剧暂不支持MP4请求</small></div>' +
             '<div style="margin:2% 0;"><label>强制换源：</label>' +
             '<select name="replace_force" id="replace_force">' +
-            '<option value="0" ' + option[Number(_config.replace_force === '0')] + '>关闭</option>' +
-            '<option value="1" ' + option[Number(_config.replace_force === '1')] + '>开启</option>' +
+            '<option value="0" ' + option[Number(!_config.replace_force)] + '>关闭</option>' +
+            '<option value="1" ' + option[Number(_config.replace_force)] + '>开启</option>' +
             '</select><br/><small>说明：强制使用请求到的视频地址和第三方播放器进行播放</small></div>' +
             '<div style="margin:2% 0;">' +
             '<label>授权状态：</label><select name="auth" id="auth" disabled>' +
-            '<option value="0" ' + option[Number(_config.auth === '0')] + '>未授权</option>' +
-            '<option value="1" ' + option[Number(_config.auth === '1')] + '>已授权</option>' +
+            '<option value="0" ' + option[Number(!_config.auth)] + '>未授权</option>' +
+            '<option value="1" ' + option[Number(_config.auth)] + '>已授权</option>' +
             '</select>' +
             '<a class="setting-context" href="javascript:;" onclick="bp_show_login()">账号授权</a>' +
             '<a class="setting-context" href="javascript:;" onclick="bp_show_logout()">取消授权</a>' +
@@ -688,7 +708,7 @@
         aid = ids.aid;
         cid = ids.cid;
         if (!aid) { // 异常
-            utils.Message.warning('aid获取出错！');
+            utils.Message.warning('aid获取出错');
         }
         q = get_quality().q;
         if (flag_name === 'ep' || flag_name === 'ss') {
