@@ -145,7 +145,7 @@ class Bilibili
 
     public function cookie($value)
     {
-        $this->has_cookie = empty($value) ? false : true;
+        $this->has_cookie = !empty($value);
         $this->header['Cookie'] = $value;
 
         return $this;
@@ -564,7 +564,7 @@ class Bilibili
         if ($this->proxy) {
             curl_setopt($curl, CURLOPT_PROXY, $this->proxy);
         }
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 3; ++$i) {
             $this->raw = curl_exec($curl);
             $this->info = curl_getinfo($curl);
             $this->error = curl_errno($curl);
