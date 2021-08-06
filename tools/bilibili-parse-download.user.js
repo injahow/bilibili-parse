@@ -390,7 +390,7 @@
                 success: (res) => {
                     if (!res.code) {
                         utils.Message.success('授权成功');
-                        if (res.auth_id && res.auth_sec){
+                        if (res.auth_id && res.auth_sec) {
                             localStorage.setItem('bp_auth_id', res.auth_id);
                             localStorage.setItem('bp_auth_sec', res.auth_sec);
                         }
