@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.1.4
-// @description  支持下载番剧与用户上传视频，自动切换为高清视频源
+// @version      1.1.5
+// @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
 // @copyright    2021, injahow (https://github.com/injahow)
@@ -22,6 +22,9 @@
 /* globals $, DPlayer waitForKeyElements */
 (function () {
     'use strict';
+
+    if (window.bp_fun_locked) return;
+    window.bp_fun_locked = true;
 
     let aid, p, q, cid, epid;
     let api_url, api_url_temp, new_config_str, new_config_str_temp;
@@ -253,10 +256,9 @@
         const auth_id = localStorage.getItem('bp_auth_id') || '';
         const auth_sec = localStorage.getItem('bp_auth_sec') || '';
         const access_key = localStorage.getItem('bp_access_key') || '';
-        let auth_time = localStorage.getItem('bp_auth_time');
+        const auth_time = localStorage.getItem('bp_auth_time') || '0';
         if (access_key && !auth_time) {
             localStorage.setItem('bp_auth_time', Date.now());
-            auth_time = localStorage.getItem('bp_auth_time');
         }
         if (user_status.is_login()) {
             if (localStorage.getItem('bp_remind_login') === '1') {
@@ -266,9 +268,9 @@
                     });
                 }
                 localStorage.setItem('bp_remind_login', '0');
-            } else if (true /*config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(auth_time) > 24 * 60 * 60 * 1000)*/) {
+            } else if (config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(auth_time) > 24 * 60 * 60 * 1000)) {
                 // check key
-                if (access_key) { // ! v1 -> v2 ? auth_id &&
+                if (access_key) {
                     $.ajax(`${config.base_api}/auth/v2/?act=check&auth_id=${auth_id}&auth_sec=${auth_sec}&access_key=${access_key}`, {
                         type: 'GET',
                         dataType: 'json',
@@ -503,7 +505,7 @@
             '<a class="setting-context" href="javascript:;" onclick="bp_show_login()">账号授权</a>' +
             '<a class="setting-context" href="javascript:;" onclick="bp_show_logout()">取消授权</a>' +
             '<a class="setting-context" href="javascript:;" onclick="bp_show_login_help()">这是什么？</a></div>' +
-            '<div style="text-align:right"><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
+            '<div style="text-align:right"><br/><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
             '</div></div>';
         $('body').append(config_html + config_css);
     })();
@@ -699,6 +701,9 @@
 
     $('body').on('click', '#setting_btn', function () {
         $('#my_config').show();
+        for (let key in config) {
+            $(`#${key}`).val(config[key]);
+        }
     });
 
     $('body').on('click', '#video_download', function () {
@@ -731,7 +736,7 @@
         }
         const auth_id = localStorage.getItem('bp_auth_id') || '';
         const auth_sec = localStorage.getItem('bp_auth_sec') || '';
-        if (config.auth === '1' && auth_id && auth_id) {
+        if (config.auth === '1' && auth_id && auth_sec) {
             api_url += `&auth_id=${auth_id}&auth_sec=${auth_sec}`;
         }
 
