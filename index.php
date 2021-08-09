@@ -39,30 +39,20 @@ use Injahow\Bilibili;
 $bp = new Bilibili($type); //video or bangumi
 
 // cache 1h
-$bp->cache(true)->cache_time(3600);
-// need config apcu
+// $bp->cache(true)->cache_time(3600);
+// need apcu
 // $bp->cache(true, 'apcu')->cache_time(3600);
 
-$bp->aid($av)->bvid($bv)->epid($ep)->page($p);
+$bp->epid($ep);
+$bp->aid($av)->bvid($bv)->page($p);
 $bp->quality($q)->format($format);
 
-// dash
-if ($format == 'dash') {
-    header('Content-type: application/json; charset=utf-8;');
-    echo $bp->result();
-    exit;
-}
+$result = json_decode($bp->result(), true);
 
-$res = json_decode($bp->result(), true);
-
-if ($otype == 'json') {
+if ($format == 'dash' || $otype == 'json') {
     header('Content-type: application/json; charset=utf-8;');
-    echo json_encode($res);
+    echo json_encode($result);
 } elseif ($otype == 'url') {
     header('Content-type: text/plain; charset=utf-8;');
-    if (isset($res['url'])) {
-        echo $res['url'];
-    } else {
-        echo '';
-    }
+    echo isset($result['url']) ? $result['url'] : '';
 }
