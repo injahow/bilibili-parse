@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.1.5
+// @version      1.2.0
 // @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -25,11 +25,6 @@
 
     if (window.bp_fun_locked) return;
     window.bp_fun_locked = true;
-
-    let aid, p, q, cid, epid;
-    let api_url, api_url_temp, new_config_str, new_config_str_temp;
-    let flag_name = '', need_vip = false, vip_need_pay = false;
-    let bili_player_id;
 
     function request_danmaku(options, _cid) {
         $.ajax(`https://api.bilibili.com/x/v1/dm/list.so?oid=${_cid}`, {
@@ -63,12 +58,7 @@
         });
     }
 
-    function bili_video_stop() { // listener
-        const bili_video = $('video[crossorigin="anonymous"]')[0];
-        bili_video.pause();
-        bili_video.currentTime = 0;
-    }
-
+    let bili_player_id;
     function replace_player(url, url_2) {
         // 恢复原视频
         recover_player();
@@ -99,7 +89,7 @@
             danmaku: true,
             apiBackend: {
                 read: function (options) {
-                    request_danmaku(options, cid);
+                    request_danmaku(options, video_status.base().cid());
                 },
                 send: function (options) { // ?
                     options.error('此脚本无法将弹幕同步到云端');
@@ -161,53 +151,10 @@
         }
     }
 
-    function get_video_status() { // todo
-        const location_href = window.location.href;
-        if (location_href.match(/bilibili.com\/bangumi\/play\/ep/)) {
-            flag_name = 'ep';
-            need_vip = window.__INITIAL_STATE__.epInfo.badge === '会员';
-            vip_need_pay = window.__INITIAL_STATE__.epPayMent.vipNeedPay;
-        } else if (location_href.match(/bilibili.com\/bangumi\/play\/ss/)) {
-            flag_name = 'ss';
-            need_vip = window.__INITIAL_STATE__.epInfo.badge === '会员';
-            vip_need_pay = window.__INITIAL_STATE__.epPayMent.vipNeedPay;
-        } else if (location_href.match(/bilibili.com\/video\/av/)) {
-            flag_name = 'av';
-            need_vip = false;
-            vip_need_pay = false;
-        } else if (location_href.match(/bilibili.com\/video\/BV/)) {
-            flag_name = 'bv';
-            need_vip = false;
-            vip_need_pay = false;
-        }
-    }
-
-    function get_all_id() {
-        let _aid, _cid;
-        if (flag_name === 'ep' || flag_name === 'ss') {
-            _aid = window.__INITIAL_STATE__.epInfo.aid;
-            _cid = window.__INITIAL_STATE__.epInfo.cid;
-        } else if (flag_name === 'av' || flag_name === 'bv') {
-            _aid = window.__INITIAL_STATE__.videoData.aid;
-            p = window.__INITIAL_STATE__.p || 1;
-            _cid = window.__INITIAL_STATE__.cidMap[_aid].cids[p];
-        }
-        return { aid: _aid, cid: _cid };
-    }
-
-    function get_quality() {
-        let _q = 0, _q_max = 0;
-        if (!!$('li.bui-select-item')[0] && !!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
-            _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')) || (_q_max > 80 ? 80 : _q_max);
-        } else if (!!$('li.squirtle-select-item')[0] && !!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
-            _q = parseInt($('li.squirtle-select-item.active').attr('data-value')) || (_q_max > 80 ? 80 : _q_max);
-        } else {
-            _q = _q_max = 80;
-        }
-        if (!user_status.is_login()) {
-            _q = _q_max > 80 ? 80 : _q_max;
-        }
-        return { q: _q, q_max: _q_max };
+    function bili_video_stop() { // listener
+        const bili_video = $('video[crossorigin="anonymous"]')[0];
+        bili_video.pause();
+        bili_video.currentTime = 0;
     }
 
     function recover_player() {
@@ -229,17 +176,101 @@
         }
     }
 
+    // video
+    let video_status;
+    (function () {
+        video_status = {
+            type, base, get_quality
+        };
+
+        function type() {
+            if (!!window.__INITIAL_STATE__.epInfo) {
+                return 'bangumi';
+            } else if (!!window.__INITIAL_STATE__.videoData) {
+                return 'video';
+            }
+        }
+
+        function base() {
+            const _type = type();
+            if (_type === 'video') {
+                return {
+                    aid: () => {
+                        return window.__INITIAL_STATE__.videoData.aid;
+                    },
+                    p: () => {
+                        return window.__INITIAL_STATE__.p || 1;
+                    },
+                    cid: () => {
+                        const aid = window.__INITIAL_STATE__.videoData.aid;
+                        const p = window.__INITIAL_STATE__.p || 1;
+                        return window.__INITIAL_STATE__.cidMap[aid].cids[p];
+                    },
+                    epid: () => {
+                        return '';
+                    },
+                    need_vip: () => {
+                        return false;
+                    },
+                    vip_need_pay: () => {
+                        return false;
+                    }
+                };
+            } else if (_type === 'bangumi') {
+                return {
+                    aid: () => {
+                        return window.__INITIAL_STATE__.epInfo.aid;
+                    },
+                    p: () => {
+                        return window.__INITIAL_STATE__.epInfo.i || 1;
+                    },
+                    cid: () => {
+                        return window.__INITIAL_STATE__.epInfo.cid;
+                    },
+                    epid: () => {
+                        return window.__INITIAL_STATE__.epInfo.id;
+                    },
+                    need_vip: () => {
+                        return window.__INITIAL_STATE__.epInfo.badge === '会员';
+                    },
+                    vip_need_pay: () => {
+                        return window.__INITIAL_STATE__.epPayMent.vipNeedPay;
+                    }
+                };
+            }
+        }
+
+        function get_quality() {
+            let _q = 0, _q_max = 0;
+            if (!!$('li.bui-select-item')[0] && !!(_q_max = parseInt($('li.bui-select-item')[0].dataset.value))) {
+                _q = parseInt($('li.bui-select-item.bui-select-item-active').attr('data-value')) || (_q_max > 80 ? 80 : _q_max);
+            } else if (!!$('li.squirtle-select-item')[0] && !!(_q_max = parseInt($('li.squirtle-select-item')[0].dataset.value))) {
+                _q = parseInt($('li.squirtle-select-item.active').attr('data-value')) || (_q_max > 80 ? 80 : _q_max);
+            } else {
+                _q = _q_max = 80;
+            }
+            if (!user_status.is_login()) {
+                _q = _q_max > 80 ? 80 : _q_max;
+            }
+            return { q: _q, q_max: _q_max };
+        }
+
+    })();
+
+    const check = {
+        aid: '', cid: '', q: ''
+    };
     function refresh() {
         //utils.Message.info('refresh...');
         console.log('refresh...');
         !!$('#video_download')[0] && $('#video_download').hide();
         !!$('#video_download_2')[0] && $('#video_download_2').hide();
         recover_player();
-        // 更新cid和aid - 1
-        const ids = get_all_id();
-        aid = ids.aid;
-        cid = ids.cid;
-        q = get_quality().q;
+        // 更新check
+        const video_base = video_status.base();
+        check.aid = video_base.aid();
+        check.cid = video_base.cid();
+        check.q = video_status.get_quality().q;
     }
 
     // https://greasyfork.org/zh-CN/scripts/25718-%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6
@@ -420,6 +451,7 @@
         auth: '0'
     };
     // config_init
+    let new_config_str, new_config_str_temp;
     (function () {
         const config_str = localStorage.getItem('my_config_str');
         if (!config_str) {
@@ -566,6 +598,7 @@
             '<button class="setting-button" name="affirm">确定</button>' +
             '<button class="setting-button" name="cancel">取消</button></div>' +
             '</div></div>';
+
         function messageBox(ctx, type) {
             if (type === 'confirm') {
                 $('div.message_box_btn button[name="cancel"]').show();
@@ -594,12 +627,14 @@
                 }
             };
         }
+
         let id = 0;
         function message(html, type) {
             id += 1;
             messageEnQueue(`<div id="message-${id}" class="message message-${type}"><div class="message-context"><p><strong>${type}：</strong></p><p>${html}</p></div></div>`, id);
             messageDeQueue(id);
         }
+
         function messageEnQueue(message, id) {
             $('div.message-bg').append(message);
             $(`div#message-${id}`).animate({
@@ -607,6 +642,7 @@
                 'opacity': '1',
             }, 300);
         }
+
         function messageDeQueue(id, time = 3000) {
             setTimeout(() => {
                 const e = `div#message-${id}`;
@@ -618,6 +654,7 @@
                 });
             }, time);
         }
+
         $('body').append(components_html + components_css);
     })();
 
@@ -632,6 +669,7 @@
         };
         let _is_login = false, _vip_status = 0, _mid = '';
         let is_init = false;
+
         function lazy_init(last_init = false) {
             if (!is_init) {
                 if (window.__BILI_USER_INFO__) {
@@ -655,18 +693,23 @@
                 is_init = last_init;
             }
         }
+
         function is_login() {
             return _is_login;
         }
+
         function vip_status() {
             return _vip_status;
         }
+
         function mid() {
             return _mid;
         }
+
         function need_replace() {
-            return (!_is_login || (_is_login && !_vip_status && need_vip));
+            return (!_is_login || (_is_login && !_vip_status && video_status.base().need_vip()));
         }
+
     })();
 
     $('body').append('<a id="video_url" style="display:none" target="_blank" referrerpolicy="origin" href="#"></a>');
@@ -694,7 +737,6 @@
                 '</div>';
             $('#toolbar_module').after(my_toolbar);
         }
-        get_video_status();
         user_status.lazy_init();
         check_login_status();
     }, 3000);
@@ -714,26 +756,19 @@
         $('#video_url_2')[0].click();
     });
 
+    let api_url, api_url_temp;
     $('body').on('click', '#bilibili_parse', function () {
         user_status.lazy_init(true); // init
-        get_video_status();
 
-        // 更新cid和aid - 2
-        const ids = get_all_id();
-        aid = ids.aid;
-        cid = ids.cid;
-        if (!aid) { // 异常
-            utils.Message.warning('aid获取出错');
-        }
-        q = get_quality().q;
-        if (flag_name === 'ep' || flag_name === 'ss') {
-            p = window.__INITIAL_STATE__.epInfo.i || 1;
-            epid = window.__INITIAL_STATE__.epInfo.id;
-            api_url = `${config.base_api}?av=${aid}&p=${p}&ep=${epid}&cid=${cid}&q=${q}&type=bangumi&format=${config.format}&otype=json`;
-        } else if (flag_name === 'av' || flag_name === 'bv') {
-            p = window.__INITIAL_STATE__.p || 1;
-            api_url = `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&q=${q}&type=video&format=${config.format}&otype=json`;
-        }
+        const video_base = video_status.base();
+        const aid = video_base.aid();
+        const p = video_base.p();
+        const cid = video_base.cid();
+        const epid = video_base.epid();
+        const type = video_status.type();
+        const q = video_status.get_quality().q;
+        api_url = `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${q}&type=${type}&format=${config.format}&otype=json`;
+
         const auth_id = localStorage.getItem('bp_auth_id') || '';
         const auth_sec = localStorage.getItem('bp_auth_sec') || '';
         if (config.auth === '1' && auth_id && auth_sec) {
@@ -811,7 +846,7 @@
     });
 
     setInterval(function () {
-        if (q !== get_quality().q) {
+        if (check.q !== video_status.get_quality().q) {
             refresh();
         }
     }, 1000);
@@ -827,8 +862,8 @@
 
     // 定时检查 aid 和 cid
     setInterval(function () {
-        const ids = get_all_id();
-        if (aid !== ids.aid || cid !== ids.cid) {
+        const video_base = video_status.base();
+        if (check.aid !== video_base.aid() || check.cid !== video_base.cid()) {
             refresh();
         }
     }, 3000);
