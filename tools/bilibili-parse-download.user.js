@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.2.0
+// @version      1.2.1
 // @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -63,11 +63,10 @@
         // 恢复原视频
         recover_player();
         // 暂停原视频
-        if (!!$('video[crossorigin="anonymous"]')[0]) {
-            bili_video_stop();
-            const bili_video = $('video[crossorigin="anonymous"]')[0];
-            bili_video.addEventListener('play', bili_video_stop, false);
-        }
+        bili_video_stop();
+        const bili_video = $(bili_video_tag())[0];
+        !!bili_video && bili_video.addEventListener('play', bili_video_stop, false);
+
         if (!!$('#bilibiliPlayer')[0]) {
             bili_player_id = '#bilibiliPlayer';
             $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
@@ -151,16 +150,28 @@
         }
     }
 
+    function bili_video_tag() {
+        let tag;
+        if (!!$('video[crossorigin="anonymous"]')[0]) {
+            tag = 'video[crossorigin="anonymous"]';
+        } else if (!!$('bwp-video')[0]) {
+            tag = 'bwp-video';
+        }
+        return tag;
+    }
+
     function bili_video_stop() { // listener
-        const bili_video = $('video[crossorigin="anonymous"]')[0];
-        bili_video.pause();
-        bili_video.currentTime = 0;
+        const bili_video = $(bili_video_tag())[0];
+        if (!!bili_video) {
+            bili_video.pause();
+            bili_video.currentTime = 0;
+        }
     }
 
     function recover_player() {
         if (window.my_dplayer) {
             utils.Message.info('恢复播放器');
-            const bili_video = $('video[crossorigin="anonymous"]')[0];
+            const bili_video = $(bili_video_tag())[0];
             !!bili_video && bili_video.removeEventListener('play', bili_video_stop, false);
             window.my_dplayer.destroy();
             window.my_dplayer = null;
