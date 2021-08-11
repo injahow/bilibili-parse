@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.2.1
+// @version      1.3.0
 // @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -459,7 +459,12 @@
         base_api: 'https://api.injahow.cn/bparse/',
         format: 'flv',
         replace_force: '0',
-        auth: '0'
+        auth: '0',
+        download_type: 'web',
+        rpc_domain: 'http://localhost',
+        rpc_port: '16800',
+        rpc_token: '',
+        rpc_dir: 'D:/'
     };
     // config_init
     let new_config_str, new_config_str_temp;
@@ -484,6 +489,12 @@
             config.format = $('#format option:selected').val();
             config.replace_force = $('#replace_force option:selected').val();
             config.auth = $('#auth option:selected').val();
+            config.download_type = $('#download_type option:selected').val();
+            config.rpc_domain = $('#rpc_domain').val();
+            config.rpc_port = $('#rpc_port').val();
+            config.rpc_token = $('#rpc_token').val();
+            config.rpc_dir = $('#rpc_dir').val();
+
             new_config_str = JSON.stringify(config);
             localStorage.setItem('my_config_str', new_config_str);
             $('#my_config').hide();
@@ -536,6 +547,18 @@
             '<option value="dash" ' + option[Number(_config.format === 'dash')] + '>DASH</option>' +
             '<option value="mp4" ' + option[Number(_config.format === 'mp4')] + '>MP4</option>' +
             '</select><br/><small>注意：番剧暂不支持MP4请求</small></div>' +
+            '<div style="margin:2% 0;"><label>下载方式：</label>' +
+            '<select name="download_type" id="download_type">' +
+            '<option value="web" ' + option[Number(_config.download_type === 'web')] + '>WEB浏览器</option>' +
+            '<option value="rpc" ' + option[Number(_config.download_type === 'rpc')] + '>RPC接口</option>' +
+            '<option value="blob" ' + option[Number(_config.download_type === 'blob')] + '>Blob请求</option>' +
+            '</select><br/></div>' +
+            '<div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | token | 保存目录 ]</label><br/>' +
+            `<input id="rpc_domain" value="${_config.rpc_domain}" style="width:20%;"> : ` +
+            `<input id="rpc_port" value="${_config.rpc_port}" style="width:10%;"> | ` +
+            `<input id="rpc_token" placeholder="没有token不填" value="${_config.rpc_token}" style="width:15%;"> | ` +
+            `<input id="rpc_dir" placeholder="留空使用默认目录" value="${_config.rpc_dir}" style="width:20%;">` +
+            '<br/><small>注意：RPC默认使用Motrix下载，其他软件请自行修改RPC参数</small></div>' +
             '<div style="margin:2% 0;"><label>强制换源：</label>' +
             '<select name="replace_force" id="replace_force">' +
             '<option value="0" ' + option[Number(!_config.replace_force)] + '>关闭</option>' +
@@ -555,6 +578,7 @@
 
     // components
     const utils = {
+        Video: {},
         Message: {},
         MessageBox: {}
     };
@@ -588,6 +612,121 @@
                 }, 'confirm');
             }
         };
+        utils.Video = {
+            download: (url, name, type) => {
+                if (type === 'blob') {
+                    download_blob(url, name);
+                } else if (type === 'rpc') {
+                    download_rpc(url, name);
+                }
+            }
+        };
+
+        function download_rpc(url, filename) {
+            if (window.bp_download_rpc_clicked) {
+                utils.Message.warning('(^・ω・^)~喵喵喵~');
+                return;
+            }
+            window.bp_download_rpc_clicked = true;
+            const rpc = {
+                domain: config.rpc_domain,
+                port: config.rpc_port,
+                token: config.rpc_token,
+                dir: config.rpc_dir,
+            };
+            const rpc_url = `${rpc.domain}:${rpc.port}/jsonrpc`;
+            const json_rpc = {
+                id: window.btoa(`BParse_${Date.now()}_${Math.random()}`),
+                jsonrpc: '2.0',
+                method: 'aria2.addUri',
+                params: [`token:${rpc.token}`, [url], {
+                    dir: rpc.dir,
+                    out: filename,
+                    header: [
+                        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36',
+                        'Referer: https://www.bilibili.com/'
+                    ]
+                }]
+            };
+            utils.Message.info('发送RPC下载请求');
+            const data_str = JSON.stringify(json_rpc);
+            $.ajax(rpc_url, {
+                type: 'POST',
+                dataType: 'json',
+                data: data_str,
+                success: (res) => {
+                    if (res.result) {
+                        utils.Message.success('RPC请求成功');
+                        window.bp_download_rpc_clicked = false;
+                    } else {
+                        utils.Message.warning('RPC请求失败');
+                        window.bp_download_rpc_clicked = false;
+                    }
+                },
+                error: () => {
+                    utils.Message.danger('RPC请求异常，请确认RPC服务配置及软件运行状态');
+                    window.bp_download_rpc_clicked = false;
+                }
+            });
+        }
+
+        function show_progress(data) {
+            if (window.bp_show_progress) {
+                utils.MessageBox.alert(`文件大小：${Math.floor(data.total / (1024 * 1024))}MB(${data.total}Byte)<br/>` +
+                    `已经下载：${Math.floor(data.loaded / (1024 * 1024))}MB(${data.loaded}Byte)<br/>` +
+                    `当前进度：${data.percent}%<br/>下载中请勿操作浏览器！`, () => {
+                        window.bp_show_progress = false;
+                        utils.MessageBox.alert('注意：刷新或离开页面会导致下载取消！');
+                    });
+            }
+            if (data.total === data.loaded) {
+                utils.Message.success('下载完成');
+                window.bp_download_blob_clicked = false;
+            }
+        }
+
+        function download_blob(url, name) {
+            if (window.bp_download_blob_clicked) {
+                utils.Message.warning('(^・ω・^)~喵喵喵~');
+                window.bp_show_progress = true;
+                return;
+            }
+            const xhr = new XMLHttpRequest();
+            xhr.open('get', url);
+            xhr.responseType = 'blob';
+            xhr.onload = function () {
+                if (this.status === 200 || this.status === 304) {
+                    if ('msSaveOrOpenBlob' in navigator) {
+                        navigator.msSaveOrOpenBlob(this.response, name);
+                        return;
+                    }
+                    const blob_url = URL.createObjectURL(this.response);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = blob_url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blob_url);
+                }
+            };
+            window.bp_show_progress = true;
+            xhr.onprogress = function (evt) {
+                if (this.state != 4) {
+                    const loaded = evt.loaded;
+                    const tot = evt.total;
+                    show_progress({
+                        total: tot,
+                        loaded: loaded,
+                        percent: Math.floor(100 * loaded / tot)
+                    });
+                }
+            };
+            xhr.send();
+            window.bp_download_blob_clicked = true; // locked
+        }
+
         const components_css =
             '<style>' +
             '.message-bg{position:fixed;float:right;right:0;top:2%;z-index:10001;}' +
@@ -640,6 +779,7 @@
         }
 
         let id = 0;
+
         function message(html, type) {
             id += 1;
             messageEnQueue(`<div id="message-${id}" class="message message-${type}"><div class="message-context"><p><strong>${type}：</strong></p><p>${html}</p></div></div>`, id);
@@ -760,11 +900,35 @@
     });
 
     $('body').on('click', '#video_download', function () {
-        $('#video_url')[0].click();
+        const type = config.download_type;
+        if (type === 'web') {
+            $('#video_url')[0].click();
+        } else {
+            const url = $('#video_url').attr('href');
+            let file_name = window.__INITIAL_STATE__.h1Title || (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title) || 'unknown';
+            if (url.match('.flv')) {
+                file_name += '.flv';
+            } else if (url.match('.m4s')) {
+                file_name += '_video.mp4';
+            } else if (url.match('.mp4')) {
+                file_name += '.mp4';
+            } else {
+                return;
+            }
+            utils.Video.download(url, file_name, type);
+        }
     });
 
     $('body').on('click', '#video_download_2', function () {
-        $('#video_url_2')[0].click();
+        const type = config.download_type;
+        if (type === 'web') {
+            $('#video_url_2')[0].click();
+        } else {
+            const url = $('#video_url_2').attr('href');
+            let file_name = window.__INITIAL_STATE__.h1Title || (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title) || 'unknown';
+            file_name += '_audio.mp4';
+            utils.Video.download(url, file_name, type);
+        }
     });
 
     let api_url, api_url_temp;
@@ -787,7 +951,7 @@
         }
 
         if (api_url === api_url_temp && new_config_str === new_config_str_temp) {
-            utils.Message.warning('(^・ω・^)~喵喵喵~');
+            utils.Message.info('(^・ω・^)~喵喵喵~');
             const url = $('#video_url').attr('href');
             const url_2 = $('#video_url_2').attr('href');
             if (url && url !== '#') {
