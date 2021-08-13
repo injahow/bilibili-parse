@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.3.3
+// @version      1.3.4
 // @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -476,6 +476,7 @@
     };
     // config_init
     (function () {
+        const default_config = Object.assign({}, config); // 浅拷贝
         const config_str = localStorage.getItem('my_config_str');
         if (!config_str) {
             localStorage.setItem('my_config_str', JSON.stringify(config));
@@ -542,7 +543,8 @@
         const config_html =
             '<div id="my_config" style="display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            '<span style="font-size:20px"><b>bilibili视频下载 参数设置 <a style="text-decoration:underline;" href="javascript:;" onclick="bp_show_help()">&lt;获取帮助|脚本通知&gt;</a></b></span>' +
+            '<span style="font-size:20px"><b>bilibili视频下载 参数设置 <a style="text-decoration:underline;" href="javascript:;" onclick="bp_show_help()">&lt;获取帮助|脚本通知&gt;</a></b>' +
+            '<a href="javascript:;" onclick="bp_reset_config()"> [重置配置] </a></b></span>' +
             '<div style="margin:2% 0;"><label>请求地址：</label>' +
             '<input id="base_api" value="..." style="width:50%;"><br/>' +
             '<small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small></div>' +
@@ -580,6 +582,20 @@
             '<div style="text-align:right"><br/><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
             '</div></div>';
         $('body').append(config_html + config_css);
+        // 初始化配置页面
+        for (const key in config) {
+            if (Object.hasOwnProperty.call(config, key)) {
+                $(`#${key}`).val(config[key]);
+            }
+        }
+        !window.bp_reset_config && (window.bp_reset_config = () => {
+            for (const key in default_config) {
+                if (Object.hasOwnProperty.call(default_config, key)) {
+                    if (key === 'auth') continue;
+                    $(`#${key}`).val(default_config[key]);
+                }
+            }
+        });
     })();
 
     // components
@@ -919,9 +935,50 @@
                 $('#video_url').attr('href'),
                 $('#video_url_2').attr('href')
             ];
-            let msg = '建议使用IDM插件右键下载~~~<br/><br/>' +
+            const msg = '建议使用IDM、FDM等软件安装其浏览器插件后，点击链接鼠标右键下载~~~<br/><br/>' +
                 `<a href="${video_url}" target="_blank">视频地址</a><br/><br/>` +
                 (config.format === 'dash' ? `<a href="${video_url_2}" target="_blank">音频地址</a>` : '');
+            utils.MessageBox.alert(msg);
+        } else if (type === 'aria') {
+            const [video_url, video_url_2] = [
+                $('#video_url').attr('href'),
+                $('#video_url_2').attr('href')
+            ];
+            let name = window.__INITIAL_STATE__.h1Title || (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title) || 'unknown';
+            name = name.replace(/[\/\\:*?"<>|]+/g, '');
+            let file_name, file_name_2;
+            if (video_url.match('.flv')) {
+                file_name = name + '.flv';
+            } else if (video_url.match('.m4s')) {
+                file_name = name + '_video.mp4';
+            } else if (video_url.match('.mp4')) {
+                file_name = name + '.mp4';
+            }
+            file_name_2 = name + '_audio.mp4';
+            const aria2_header = `--header "User-Agent: ${window.navigator.userAgent}" --header "Referer: ${window.location.href}"`;
+            const HTMLEncode = (html) => {
+                let temp = document.createElement('div');
+                (temp.textContent != null) ? (temp.textContent = html) : (temp.innerText = html);
+                let output = temp.innerHTML;
+                temp = null;
+                return output;
+            }
+            let [code, code_2] = [
+                HTMLEncode(`aria2c "${video_url}" --out "${file_name}" ${aria2_header}`),
+                HTMLEncode(`aria2c "${video_url_2}" --out "${file_name_2}" ${aria2_header}`)
+            ]
+            const msg = '点击文本框即可复制下载命令！<br/>' +
+                `视频：<input id="aria2_code" value='${code}' onclick="bp_clip_btn('aria2_code')"></br></br>` +
+                (config.format === 'dash' ? `音频：<input id="aria2_code_2" value='${code_2}' onclick="bp_clip_btn('aria2_code_2')"><br/><br/>` +
+                    `全部：<textarea id="aria2_code_all" onclick="bp_clip_btn('aria2_code_all')">${code}\n${code_2}</textarea>` : '');
+            !window.bp_clip_btn && (window.bp_clip_btn = (id) => {
+                $(`#${id}`).select();
+                if (document.execCommand('copy')) {
+                    utils.Message.success('复制成功');
+                } else {
+                    utils.Message.warning('复制失败');
+                }
+            });
             utils.MessageBox.alert(msg);
         } else {
             const url = $('#video_url').attr('href');
@@ -944,6 +1001,8 @@
         if (type === 'web') {
             $('#video_url_2')[0].click();
         } else if (type === 'a') {
+            $('#video_download')[0].click();
+        } else if (type === 'aria') {
             $('#video_download')[0].click();
         } else {
             const url = $('#video_url_2').attr('href');
