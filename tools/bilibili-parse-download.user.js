@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.3.5
-// @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
+// @version      1.3.6
+// @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
 // @copyright    2021, injahow (https://github.com/injahow)
@@ -207,6 +207,9 @@
             const _type = type();
             if (_type === 'video') {
                 return {
+                    title: () => {
+                        return (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    },
                     aid: () => {
                         return window.__INITIAL_STATE__.videoData.aid;
                     },
@@ -230,6 +233,9 @@
                 };
             } else if (_type === 'bangumi') {
                 return {
+                    title: () => {
+                        return (window.__INITIAL_STATE__.h1Title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    },
                     aid: () => {
                         return window.__INITIAL_STATE__.epInfo.aid;
                     },
@@ -549,47 +555,67 @@
             'a.setting-context{margin:0 2%;color:blue;}a.setting-context:hover{color:red;}' +
             '</style>';
         const config_html =
-            '<div id="my_config" style="display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
-            '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">' +
-            '<span style="font-size:20px"><b>bilibili视频下载 参数设置 <a style="text-decoration:underline;" href="javascript:;" onclick="bp_show_help()">&lt;获取帮助|脚本通知&gt;</a></b>' +
-            '<a href="javascript:;" onclick="bp_reset_config()"> [重置配置] </a></b></span>' +
-            '<div style="margin:2% 0;"><label>请求地址：</label>' +
-            '<input id="base_api" value="..." style="width:50%;"><br/>' +
-            '<small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small></div>' +
-            '<div style="margin:2% 0;"><label>视频格式：</label>' +
-            '<select name="format" id="format">' +
-            '<option value="flv">FLV</option>' +
-            '<option value="dash">DASH</option>' +
-            '<option value="mp4">MP4</option>' +
-            '</select><br/><small>注意：番剧暂不支持MP4请求</small></div>' +
-            '<div style="margin:2% 0;"><label>下载方式：</label>' +
-            '<select name="download_type" id="download_type">' +
-            '<option value="web">Web浏览器</option>' +
-            '<option value="rpc">RPC接口</option>' +
-            '<option value="blob">Blob请求</option>' +
-            '<option value="a">URL链接</option>' +
-            '<option value="aria">Aria命令</option>' +
-            '</select><br/></div>' +
-            '<div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | 密钥 | 保存目录 ]</label><br/>' +
-            '<input id="rpc_domain" value="..." style="width:20%;"> : ' +
-            '<input id="rpc_port" value="..." style="width:10%;"> | ' +
-            '<input id="rpc_token" placeholder="没有密钥不用填" value="..." style="width:15%;"> | ' +
-            '<input id="rpc_dir" placeholder="留空使用默认目录" value="..." style="width:20%;">' +
-            '<br/><small>注意：RPC默认使用Motrix下载，其他软件请自行修改RPC参数</small></div>' +
-            '<div style="margin:2% 0;"><label>强制换源：</label>' +
-            '<select name="replace_force" id="replace_force">' +
-            '<option value="0">关闭</option>' +
-            '<option value="1">开启</option>' +
-            '</select><br/><small>说明：强制使用请求到的视频地址和第三方播放器进行播放</small></div>' +
-            '<div style="margin:2% 0;"><label>授权状态：</label>' +
-            '<select name="auth" id="auth" disabled>' +
-            '<option value="0">未授权</option>' +
-            '<option value="1">已授权</option></select>' +
-            '<a class="setting-context" href="javascript:;" onclick="bp_show_login()">账号授权</a>' +
-            '<a class="setting-context" href="javascript:;" onclick="bp_show_logout()">取消授权</a>' +
-            '<a class="setting-context" href="javascript:;" onclick="bp_show_login_help()">这是什么？</a></div>' +
-            '<div style="text-align:right"><br/><button class="setting-button" onclick="my_click_event()">确定</button></div>' +
-            '</div></div>';
+            `<div id="my_config"
+                style="display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">
+                <div
+                    style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:600px;transform:translate(-50%,-50%);cursor:default;">
+                    <span style="font-size:20px">
+                        <b>bilibili视频下载 参数设置</b>
+                        <b>
+                            <a href="javascript:;" onclick="bp_reset_config()"> [重置配置] </a>
+                            <a style="text-decoration:underline;" href="javascript:;" onclick="bp_show_help()">&lt;获取帮助|脚本通知&gt;</a>
+                        </b>
+                    </span>
+                    <div style="margin:2% 0;"><label>请求地址：</label>
+                        <input id="base_api" value="..." style="width:50%;"><br />
+                        <small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small>
+                    </div>
+                    <div style="margin:2% 0;"><label>视频格式：</label>
+                        <select name="format" id="format">
+                            <option value="flv">FLV</option>
+                            <option value="dash">DASH</option>
+                            <option value="mp4">MP4</option>
+                        </select><br />
+                        <small>注意：番剧暂不支持MP4请求</small>
+                    </div>
+                    <div style="margin:2% 0;"><label>下载方式：</label>
+                        <select name="download_type" id="download_type">
+                            <option value="a">URL链接</option>
+                            <option value="web">Web浏览器</option>
+                            <option value="rpc">RPC接口</option>
+                            <option value="blob">Blob请求</option>
+                            <option value="aria">Aria命令</option>
+                        </select><br />
+                        <small>提示：web和url方式下载不会设置文件名</small>
+                    </div>
+                    <div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | 密钥 | 保存目录 ]</label><br />
+                        <input id="rpc_domain" value="..." style="width:20%;"> :
+                        <input id="rpc_port" value="..." style="width:10%;"> |
+                        <input id="rpc_token" placeholder="没有密钥不用填" value="..." style="width:15%;"> |
+                        <input id="rpc_dir" placeholder="留空使用默认目录" value="..." style="width:20%;"><br />
+                        <small>注意：RPC默认使用Motrix（需要安装并运行）下载，其他软件请修改参数</small>
+                    </div>
+                    <div style="margin:2% 0;"><label>强制换源：</label>
+                        <select name="replace_force" id="replace_force">
+                            <option value="0">关闭</option>
+                            <option value="1">开启</option>
+                        </select><br />
+                        <small>说明：强制使用请求到的视频地址和第三方播放器进行播放</small>
+                    </div>
+                    <div style="margin:2% 0;"><label>授权状态：</label>
+                        <select name="auth" id="auth" disabled>
+                            <option value="0">未授权</option>
+                            <option value="1">已授权</option>
+                        </select>
+                        <a class="setting-context" href="javascript:;" onclick="bp_show_login()">账号授权</a>
+                        <a class="setting-context" href="javascript:;" onclick="bp_show_logout()">取消授权</a>
+                        <a class="setting-context" href="javascript:;" onclick="bp_show_login_help()">这是什么？</a>
+                    </div>
+                    <div style="text-align:right"><br />
+                        <button class="setting-button" onclick="my_click_event()">确定</button>
+                    </div>
+                </div>
+            </div>`;
         $('body').append(config_html + config_css);
         // 初始化配置页面
         for (const key in config) {
@@ -768,7 +794,7 @@
             '<div id="message_box" style="opacity:0;display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:400px;transform:translate(-50%,-50%);cursor:default;">' +
             '<span style="font-size:20px"><b>提示：</b></span>' +
-            '<div id="message_box_context" style="margin:2% 0;">......</div><br/><br/>' +
+            '<div id="message_box_context" style="margin:2% 0;">...</div><br/><br/>' +
             '<div class="message_box_btn">' +
             '<button class="setting-button" name="affirm">确定</button>' +
             '<button class="setting-button" name="cancel">取消</button></div>' +
@@ -918,13 +944,13 @@
     }, 3000);
 
     $('body').on('click', '#setting_btn', function () {
-        $('#my_config').show();
         // set form by config
         for (const key in config) {
             if (Object.hasOwnProperty.call(config, key)) {
                 $(`#${key}`).val(config[key]);
             }
         }
+        $('#my_config').show();
     });
 
     $('body').on('click', '#video_download', function () {
@@ -936,7 +962,7 @@
                 $('#video_url').attr('href'),
                 $('#video_url_2').attr('href')
             ];
-            const msg = '建议使用IDM、FDM等软件安装其浏览器插件后，点击链接鼠标右键下载~~~<br/><br/>' +
+            const msg = '建议使用IDM、FDM等软件安装其浏览器插件后，点击链接鼠标右键下载~<br/><br/>' +
                 `<a href="${video_url}" target="_blank">视频地址</a><br/><br/>` +
                 (config.format === 'dash' ? `<a href="${video_url_2}" target="_blank">音频地址</a>` : '');
             utils.MessageBox.alert(msg);
@@ -945,33 +971,25 @@
                 $('#video_url').attr('href'),
                 $('#video_url_2').attr('href')
             ];
-            let name = window.__INITIAL_STATE__.h1Title || (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title) || 'unknown';
-            name = name.replace(/[\/\\:*?"<>|]+/g, '');
+            const video_title = video_status.base().title();
             let file_name, file_name_2;
             if (video_url.match('.flv')) {
-                file_name = name + '.flv';
+                file_name = video_title + '.flv';
             } else if (video_url.match('.m4s')) {
-                file_name = name + '_video.mp4';
+                file_name = video_title + '_video.mp4';
             } else if (video_url.match('.mp4')) {
-                file_name = name + '.mp4';
+                file_name = video_title + '.mp4';
             }
-            file_name_2 = name + '_audio.mp4';
+            file_name_2 = video_title + '_audio.mp4';
             const aria2_header = `--header "User-Agent: ${window.navigator.userAgent}" --header "Referer: ${window.location.href}"`;
-            const HTMLEncode = (html) => {
-                let temp = document.createElement('div');
-                (temp.textContent != null) ? (temp.textContent = html) : (temp.innerText = html);
-                let output = temp.innerHTML;
-                temp = null;
-                return output;
-            }
-            let [code, code_2] = [
-                HTMLEncode(`aria2c "${video_url}" --out "${file_name}" ${aria2_header}`),
-                HTMLEncode(`aria2c "${video_url_2}" --out "${file_name_2}" ${aria2_header}`)
+            const [code, code_2] = [
+                `aria2c "${video_url}" --out "${file_name}" ${aria2_header}`,
+                `aria2c "${video_url_2}" --out "${file_name_2}" ${aria2_header}`
             ]
-            const msg = '点击文本框即可复制下载命令！<br/>' +
-                `视频：<input id="aria2_code" value='${code}' onclick="bp_clip_btn('aria2_code')"></br></br>` +
-                (config.format === 'dash' ? `音频：<input id="aria2_code_2" value='${code_2}' onclick="bp_clip_btn('aria2_code_2')"><br/><br/>` +
-                    `全部：<textarea id="aria2_code_all" onclick="bp_clip_btn('aria2_code_all')">${code}\n${code_2}</textarea>` : '');
+            const msg = '点击文本框即可复制下载命令！<br/><br/>' +
+                `视频：<br/><input id="aria2_code" value='${code}' onclick="bp_clip_btn('aria2_code')" style="width:100%;"></br></br>` +
+                (config.format === 'dash' ? `音频：<br/><input id="aria2_code_2" value='${code_2}' onclick="bp_clip_btn('aria2_code_2')" style="width:100%;"><br/><br/>` +
+                    `全部：<br/><textarea id="aria2_code_all" onclick="bp_clip_btn('aria2_code_all')" style="min-width:100%;max-width:100%;min-height:100px;max-height:100px;">${code}\n${code_2}</textarea>` : '');
             !window.bp_clip_btn && (window.bp_clip_btn = (id) => {
                 $(`#${id}`).select();
                 if (document.execCommand('copy')) {
@@ -983,7 +1001,7 @@
             utils.MessageBox.alert(msg);
         } else {
             const url = $('#video_url').attr('href');
-            let file_name = window.__INITIAL_STATE__.h1Title || (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title) || 'unknown';
+            let file_name = video_status.base().title();
             if (url.match('.flv')) {
                 file_name += '.flv';
             } else if (url.match('.m4s')) {
@@ -1007,7 +1025,7 @@
             $('#video_download')[0].click();
         } else {
             const url = $('#video_url_2').attr('href');
-            let file_name = window.__INITIAL_STATE__.h1Title || (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title) || 'unknown';
+            let file_name = video_status.base().title();
             if (url.match('.m4s')) {
                 file_name += '_audio.mp4';
             } else {
