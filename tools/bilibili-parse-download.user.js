@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.3.4
+// @version      1.3.5
 // @description  支持flv、dash、mp4视频格式，支持下载港区番剧，支持会员下载，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -534,6 +534,14 @@
                 }
             });
         };
+        !window.bp_reset_config && (window.bp_reset_config = () => {
+            for (const key in default_config) {
+                if (Object.hasOwnProperty.call(default_config, key)) {
+                    if (key === 'auth') continue;
+                    $(`#${key}`).val(default_config[key]);
+                }
+            }
+        });
         const config_css =
             '<style>' +
             '@keyframes settings-bg{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.7)}}' +
@@ -559,12 +567,13 @@
             '<option value="web">Web浏览器</option>' +
             '<option value="rpc">RPC接口</option>' +
             '<option value="blob">Blob请求</option>' +
-            '<option value="a">显示链接</option>' +
+            '<option value="a">URL链接</option>' +
+            '<option value="aria">Aria命令</option>' +
             '</select><br/></div>' +
-            '<div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | token | 保存目录 ]</label><br/>' +
+            '<div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | 密钥 | 保存目录 ]</label><br/>' +
             '<input id="rpc_domain" value="..." style="width:20%;"> : ' +
             '<input id="rpc_port" value="..." style="width:10%;"> | ' +
-            '<input id="rpc_token" placeholder="没有token不填" value="..." style="width:15%;"> | ' +
+            '<input id="rpc_token" placeholder="没有密钥不用填" value="..." style="width:15%;"> | ' +
             '<input id="rpc_dir" placeholder="留空使用默认目录" value="..." style="width:20%;">' +
             '<br/><small>注意：RPC默认使用Motrix下载，其他软件请自行修改RPC参数</small></div>' +
             '<div style="margin:2% 0;"><label>强制换源：</label>' +
@@ -588,14 +597,6 @@
                 $(`#${key}`).val(config[key]);
             }
         }
-        !window.bp_reset_config && (window.bp_reset_config = () => {
-            for (const key in default_config) {
-                if (Object.hasOwnProperty.call(default_config, key)) {
-                    if (key === 'auth') continue;
-                    $(`#${key}`).val(default_config[key]);
-                }
-            }
-        });
     })();
 
     // components
