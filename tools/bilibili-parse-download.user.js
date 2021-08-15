@@ -877,7 +877,7 @@
                 return {
                     title: () => {
                         const p = state.p || 1;
-                        const title = (state.videoData && state.videoData.title || 'unknown') + ` P${p} （${window.vd.pages[p].part || p}）`;
+                        const title = (state.videoData && state.videoData.title || 'unknown') + ` P${p} （${window.vd.pages[p - 1].part || p}）`;
                         return title.replace(/[\/\\:*?"<>|]+/g, '');
                     },
                     aid: () => {
