@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.4.3
+// @version      1.4.4
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -877,7 +877,7 @@
                 return {
                     title: () => {
                         const p = state.p || 1;
-                        const title = (state.videoData && state.videoData.title || 'unknown') + ` P${p} （${window.vd.pages[p - 1].part || p}）`;
+                        const title = (state.videoData && state.videoData.title || 'unknown') + ` P${p} （${state.videoData.pages[p - 1].part || p}）`;
                         return title.replace(/[\/\\:*?"<>|]+/g, '');
                     },
                     aid: () => {
