@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.4.0
+// @version      1.4.1
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -12,6 +12,8 @@
 // @match        *://www.bilibili.com/video/BV*
 // @match        *://www.bilibili.com/bangumi/play/ep*
 // @match        *://www.bilibili.com/bangumi/play/ss*
+// @match        *://www.bilibili.com/cheese/play/ep*
+// @match        *://www.bilibili.com/cheese/play/ss*
 // @match        https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
 // @require      https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js
@@ -28,7 +30,61 @@
     if (window.bp_fun_locked) return;
     window.bp_fun_locked = true;
 
-    let auth;
+    // user
+    let UserStatus;
+    (function () {
+        UserStatus = {
+            is_login, vip_status, mid,
+            need_replace,
+            lazy_init
+        };
+        let _is_login = false, _vip_status = 0, _mid = '';
+        let is_init = false;
+
+        function lazy_init(last_init = false) {
+            if (!is_init) {
+                if (window.__BILI_USER_INFO__) {
+                    _is_login = window.__BILI_USER_INFO__.isLogin;
+                    _vip_status = window.__BILI_USER_INFO__.vipStatus;
+                    _mid = window.__BILI_USER_INFO__.mid || '';
+                } else if (window.__BiliUser__) {
+                    _is_login = window.__BiliUser__.isLogin;
+                    if (window.__BiliUser__.cache) {
+                        _vip_status = window.__BiliUser__.cache.data.vipStatus;
+                        _mid = window.__BiliUser__.cache.data.mid || '';
+                    } else {
+                        _vip_status = 0;
+                        _mid = '';
+                    }
+                } else {
+                    _is_login = false;
+                    _vip_status = 0;
+                    _mid = '';
+                }
+                is_init = last_init;
+            }
+        }
+
+        function is_login() {
+            return _is_login;
+        }
+
+        function vip_status() {
+            return _vip_status;
+        }
+
+        function mid() {
+            return _mid;
+        }
+
+        function need_replace() {
+            return (!_is_login || (_is_login && !_vip_status && VideoStatus.base().need_vip()));
+        }
+
+    })();
+
+    // auth
+    let Auth;
     (function () {
         // https://greasyfork.org/zh-CN/scripts/25718-%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6/code
         if (location.href.match(/^https:\/\/www\.mcbbs\.net\/template\/mcbbs\/image\/special_photo_bg\.png/) != null) {
@@ -37,11 +93,11 @@
                 document.children[0].innerHTML = '<title>bilibili-parse - 授权</title><meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
                 window.opener.postMessage('bilibili-parse-login-credentials: ' + location.href, '*');
             }
-            auth = null;
+            Auth = null;
             return;
         }
 
-        auth = {
+        Auth = {
             check_login_status
         };
 
@@ -56,7 +112,7 @@
             if (access_key && auth_time === '0') {
                 localStorage.setItem('bp_auth_time', Date.now());
             }
-            if (user_status.is_login()) {
+            if (UserStatus.is_login()) {
                 if (localStorage.getItem('bp_remind_login') === '1') {
                     if (!access_key) {
                         utils.MessageBox.confirm('当前脚本未进行账号授权，无法请求1080P以上的清晰度；如果你是大会员或承包过这部番，授权即可解锁全部清晰度；是否需要进行账号授权？', () => {
@@ -190,7 +246,7 @@
                     localStorage.getItem('bp_auth_id') || '',
                     localStorage.getItem('bp_auth_sec') || ''
                 ];
-                $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/v2/?act=login&auth_id=${auth_id}&auth_sec=${auth_sec}&vip_status=${user_status.vip_status()}&`), {
+                $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/v2/?act=login&auth_id=${auth_id}&auth_sec=${auth_sec}&vip_status=${UserStatus.vip_status()}&`), {
                     type: 'GET',
                     dataType: 'json',
                     success: (res) => {
@@ -217,7 +273,7 @@
             }
         });
     })();
-    if (!auth) return;
+    if (!Auth) return;
 
     // config
     const config = {
@@ -507,6 +563,10 @@
         };
 
         function request_danmaku(options, _cid) {
+            if (!_cid) {
+                options.error('cid未知，无法获取弹幕');
+                return;
+            }
             $.ajax(`https://api.bilibili.com/x/v1/dm/list.so?oid=${_cid}`, {
                 dataType: 'text',
                 success: (result) => {
@@ -550,12 +610,23 @@
 
             if (!!$('#bilibiliPlayer')[0]) {
                 bili_player_id = '#bilibiliPlayer';
-                $('#bilibiliPlayer').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
-                $('#bilibiliPlayer').hide();
+                $(bili_player_id).before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor">');
+                $(bili_player_id).hide();
             } else if (!!$('#bilibili-player')[0]) {
                 bili_player_id = '#bilibili-player';
-                $('#bilibili-player').before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
-                $('#bilibili-player').hide();
+                $(bili_player_id).before('<div id="my_dplayer" class="bilibili-player relative bilibili-player-no-cursor" style="width:100%;height:100%;"></div>');
+                $(bili_player_id).hide();
+            } else if (VideoStatus.type() === 'cheese') {
+                if (!!$('div.bpx-player[data-injector="nano"]')[0]) {
+                    $('#pay-mask').hide();
+                    $('#bofqi').show();
+                    bili_player_id = 'div.bpx-player[data-injector="nano"]';
+                    $(bili_player_id).before('<div id="my_dplayer" style="width:100%;height:100%;"></div>');
+                    $(bili_player_id).hide();
+                } else { // 第一次
+                    bili_player_id = '#pay-mask';
+                    $(bili_player_id).html('<div id="my_dplayer" style="width:100%;height:100%;"></div>');
+                }
             }
             $('#player_mask_module').hide();
             window.my_dplayer = new DPlayer({
@@ -568,7 +639,7 @@
                 danmaku: true,
                 apiBackend: {
                     read: function (options) {
-                        request_danmaku(options, video_status.base().cid());
+                        request_danmaku(options, VideoStatus.base().cid());
                     },
                     send: function (options) { // ?
                         options.error('此脚本无法将弹幕同步到云端');
@@ -776,14 +847,22 @@
         $('body').append(components_html + components_css);
     })();
 
+    // error page redirect -> ss / ep
+    if ($('.error-text')[0]) {
+        return;
+    }
+
     // video
-    let video_status;
+    let VideoStatus;
     (function () {
-        video_status = {
+        VideoStatus = {
             type, base, get_quality
         };
 
         function type() {
+            if (location.pathname.match('/cheese/play/')) {
+                return 'cheese';
+            }
             if (!!window.__INITIAL_STATE__.epInfo) {
                 return 'bangumi';
             } else if (!!window.__INITIAL_STATE__.videoData) {
@@ -843,6 +922,32 @@
                         return window.__INITIAL_STATE__.epPayMent.vipNeedPay;
                     }
                 };
+            } else if (_type === 'cheese') {
+                const episodes = window.PlayerAgent.getEpisodes();
+                const p_id = $('li.on.list-box-li').index() || 0;
+                return {
+                    title: () => {
+                        return (episodes[p_id].title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    aid: () => {
+                        return episodes[p_id].aid;
+                    },
+                    p: () => {
+                        return p_id + 1;
+                    },
+                    cid: () => {
+                        return episodes[p_id].cid;
+                    },
+                    epid: () => {
+                        return episodes[p_id].id;
+                    },
+                    need_vip: () => {
+                        return false;
+                    },
+                    vip_need_pay: () => {
+                        return false;
+                    }
+                };
             }
         }
 
@@ -855,7 +960,7 @@
             } else {
                 _q = _q_max = 80;
             }
-            if (!user_status.is_login()) {
+            if (!UserStatus.is_login()) {
                 _q = _q_max > 80 ? 80 : _q_max;
             }
             return { q: _q, q_max: _q_max };
@@ -863,62 +968,9 @@
 
     })();
 
-    // user
-    let user_status;
-    (function () {
-        user_status = {
-            is_login, vip_status, mid,
-            need_replace,
-            lazy_init
-        };
-        let _is_login = false, _vip_status = 0, _mid = '';
-        let is_init = false;
-
-        function lazy_init(last_init = false) {
-            if (!is_init) {
-                if (window.__BILI_USER_INFO__) {
-                    _is_login = window.__BILI_USER_INFO__.isLogin;
-                    _vip_status = window.__BILI_USER_INFO__.vipStatus;
-                    _mid = window.__BILI_USER_INFO__.mid || '';
-                } else if (window.__BiliUser__) {
-                    _is_login = window.__BiliUser__.isLogin;
-                    if (window.__BiliUser__.cache) {
-                        _vip_status = window.__BiliUser__.cache.data.vipStatus;
-                        _mid = window.__BiliUser__.cache.data.mid || '';
-                    } else {
-                        _vip_status = 0;
-                        _mid = '';
-                    }
-                } else {
-                    _is_login = false;
-                    _vip_status = 0;
-                    _mid = '';
-                }
-                is_init = last_init;
-            }
-        }
-
-        function is_login() {
-            return _is_login;
-        }
-
-        function vip_status() {
-            return _vip_status;
-        }
-
-        function mid() {
-            return _mid;
-        }
-
-        function need_replace() {
-            return (!_is_login || (_is_login && !_vip_status && video_status.base().need_vip()));
-        }
-
-    })();
-
     // check
     const check = {
-        aid: '', cid: '', q: ''
+        aid: '', cid: '', q: '', epid: ''
     };
     (function () {
         function refresh() {
@@ -928,9 +980,13 @@
             $('#video_download_2').hide();
             utils.Player.recover();
             // 更新check
-            const video_base = video_status.base();
-            [check.aid, check.cid] = [video_base.aid(), video_base.cid()];
-            check.q = video_status.get_quality().q;
+            const video_base = VideoStatus.base();
+            [check.aid, check.cid, check.epid] = [
+                video_base.aid(),
+                video_base.cid(),
+                video_base.epid()
+            ];
+            check.q = VideoStatus.get_quality().q;
         }
 
         // 监听p
@@ -953,8 +1009,13 @@
             refresh();
         });
         setInterval(function () {
-            if (check.q !== video_status.get_quality().q) {
+            if (check.q !== VideoStatus.get_quality().q) {
                 refresh();
+            } else if (VideoStatus.type() === 'cheese') {
+                // epid for cheese
+                if (check.epid !== VideoStatus.base().epid()) {
+                    refresh();
+                }
             }
         }, 1000);
         // 监听aid
@@ -966,11 +1027,12 @@
         });
         // 定时检查 aid 和 cid
         setInterval(function () {
-            const video_base = video_status.base();
+            const video_base = VideoStatus.base();
             if (check.aid !== video_base.aid() || check.cid !== video_base.cid()) {
                 refresh();
             }
         }, 3000);
+
     })();
 
     // main
@@ -998,9 +1060,18 @@
                     '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载音频</span></div>' +
                     '</div>';
                 $('#toolbar_module').after(my_toolbar);
+            } else if (!!$('div.video-toolbar')[0]) {
+                my_toolbar =
+                    '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true"><div class="ops">' +
+                    '<span id="setting_btn"><i class="van-icon-general_addto_s"></i>脚本设置</span>' +
+                    '<span id="bilibili_parse"><i class="van-icon-floatwindow_custome"></i>请求地址</span>' +
+                    '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>' +
+                    '<span id="video_download_2" style="display:none"><i class="van-icon-download"></i>下载音频</span>' +
+                    '</div></div>';
+                $('div.video-toolbar').after(my_toolbar);
             }
-            user_status.lazy_init();
-            auth.check_login_status();
+            UserStatus.lazy_init();
+            Auth.check_login_status();
         }, 3000);
         $('body').on('click', '#setting_btn', function () {
             // set form by config
@@ -1029,7 +1100,7 @@
                     $('#video_url').attr('href'),
                     $('#video_url_2').attr('href')
                 ];
-                const video_title = video_status.base().title();
+                const video_title = VideoStatus.base().title();
                 let file_name, file_name_2;
                 if (video_url.match('.flv')) {
                     file_name = video_title + '.flv';
@@ -1059,7 +1130,7 @@
                 utils.MessageBox.alert(msg);
             } else {
                 const url = $('#video_url').attr('href');
-                let file_name = video_status.base().title();
+                let file_name = VideoStatus.base().title();
                 if (url.match('.flv')) {
                     file_name += '.flv';
                 } else if (url.match('.m4s')) {
@@ -1082,7 +1153,7 @@
                 $('#video_download')[0].click();
             } else {
                 const url = $('#video_url_2').attr('href');
-                let file_name = video_status.base().title();
+                let file_name = VideoStatus.base().title();
                 if (url.match('.m4s')) {
                     file_name += '_audio.mp4';
                 } else {
@@ -1093,13 +1164,13 @@
         });
         let api_url, api_url_temp;
         $('body').on('click', '#bilibili_parse', function () {
-            user_status.lazy_init(true); // init
-            const video_base = video_status.base();
+            UserStatus.lazy_init(true); // init
+            const video_base = VideoStatus.base();
             const [aid, p, cid, epid] = [
                 video_base.aid(), video_base.p(), video_base.cid(), video_base.epid()
             ];
             const [type, q] = [
-                video_status.type(), video_status.get_quality().q
+                VideoStatus.type(), VideoStatus.get_quality().q
             ];
             api_url = `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${q}&type=${type}&format=${config.format}&otype=json`;
             const [auth_id, auth_sec] = [
@@ -1116,7 +1187,7 @@
                 if (url && url !== '#') {
                     $('#video_download').show();
                     config.format === 'dash' && $('#video_download_2').show();
-                    if (user_status.need_replace() || config.replace_force === '1') {
+                    if (UserStatus.need_replace() || config.replace_force === '1') {
                         !$('#my_dplayer')[0] && utils.Player.replace(url, url_2);
                     }
                 }
@@ -1139,7 +1210,7 @@
                             $('#video_url_2').attr('href', url_2);
                             $('#video_download_2').show();
                         }
-                        if (user_status.need_replace() || config.replace_force === '1') {
+                        if (UserStatus.need_replace() || config.replace_force === '1') {
                             utils.Player.replace(url, url_2);
                         }
                     } else {
