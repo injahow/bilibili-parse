@@ -283,7 +283,7 @@ class Bilibili
                         // todo
                         return json_encode(array(
                             'code'    => 1,
-                            'message' => '暂不支持番剧的MP4请求'
+                            'message' => '暂不支持该类视频的MP4请求'
                         ));
                     }
                     break;
