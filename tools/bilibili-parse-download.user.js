@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.4.1
+// @version      1.4.3
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -873,20 +873,23 @@
         function base() {
             const _type = type();
             if (_type === 'video') {
+                const state = window.__INITIAL_STATE__;
                 return {
                     title: () => {
-                        return (window.__INITIAL_STATE__.videoData && window.__INITIAL_STATE__.videoData.title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                        const p = state.p || 1;
+                        const title = (state.videoData && state.videoData.title || 'unknown') + ` P${p} （${window.vd.pages[p].part || p}）`;
+                        return title.replace(/[\/\\:*?"<>|]+/g, '');
                     },
                     aid: () => {
-                        return window.__INITIAL_STATE__.videoData.aid;
+                        return state.videoData.aid;
                     },
                     p: () => {
-                        return window.__INITIAL_STATE__.p || 1;
+                        return state.p || 1;
                     },
                     cid: () => {
-                        const aid = window.__INITIAL_STATE__.videoData.aid;
-                        const p = window.__INITIAL_STATE__.p || 1;
-                        return window.__INITIAL_STATE__.cidMap[aid].cids[p];
+                        const aid = state.videoData.aid;
+                        const p = state.p || 1;
+                        return state.cidMap[aid].cids[p];
                     },
                     epid: () => {
                         return '';
@@ -899,27 +902,28 @@
                     }
                 };
             } else if (_type === 'bangumi') {
+                const state = window.__INITIAL_STATE__;
                 return {
                     title: () => {
-                        return (window.__INITIAL_STATE__.h1Title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                        return (state.h1Title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
                     },
                     aid: () => {
-                        return window.__INITIAL_STATE__.epInfo.aid;
+                        return state.epInfo.aid;
                     },
                     p: () => {
-                        return window.__INITIAL_STATE__.epInfo.i || 1;
+                        return state.epInfo.i || 1;
                     },
                     cid: () => {
-                        return window.__INITIAL_STATE__.epInfo.cid;
+                        return state.epInfo.cid;
                     },
                     epid: () => {
-                        return window.__INITIAL_STATE__.epInfo.id;
+                        return state.epInfo.id;
                     },
                     need_vip: () => {
-                        return window.__INITIAL_STATE__.epInfo.badge === '会员';
+                        return state.epInfo.badge === '会员';
                     },
                     vip_need_pay: () => {
-                        return window.__INITIAL_STATE__.epPayMent.vipNeedPay;
+                        return state.epPayMent.vipNeedPay;
                     }
                 };
             } else if (_type === 'cheese') {
