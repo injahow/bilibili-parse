@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.4.4
+// @version      1.4.5
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @homepage     https://github.com/injahow/bilibili-parse
@@ -34,9 +34,8 @@
     let UserStatus;
     (function () {
         UserStatus = {
-            is_login, vip_status, mid,
-            need_replace,
-            lazy_init
+            lazy_init,
+            is_login, vip_status, mid, need_replace
         };
         let _is_login = false, _vip_status = 0, _mid = '';
         let is_init = false;
@@ -273,7 +272,9 @@
             }
         });
     })();
-    if (!Auth) return;
+    if (!Auth) {
+        return;
+    }
 
     // config
     const config = {
@@ -355,13 +356,13 @@
                 }
             }
         });
-        const config_css =
+        const config_css = '' +
             '<style>' +
             '@keyframes settings-bg{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.7)}}' +
             '.setting-button{width:120px;height:40px;border-width:0px;border-radius:3px;background:#1E90FF;cursor:pointer;outline:none;color:white;font-size:17px;}.setting-button:hover{background:#5599FF;}' +
             'a.setting-context{margin:0 2%;color:blue;}a.setting-context:hover{color:red;}' +
             '</style>';
-        const config_html =
+        const config_html = '' +
             `<div id="my_config"
                 style="display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">
                 <div
@@ -450,8 +451,188 @@
                 } else if (type === 'rpc') {
                     download_rpc(url, filename);
                 }
-            }
+            },
+            download_all
         };
+
+        function download_all() {
+
+            const [auth_id, auth_sec] = [
+                localStorage.getItem('bp_auth_id'), localStorage.getItem('bp_auth_sec'),
+            ];
+            const video_base = VideoStatus.base();
+            const [type, q, total] = [
+                VideoStatus.type(),
+                VideoStatus.get_quality().q,
+                video_base.total()
+            ];
+
+            $('body').on('click', 'input[name="dl_video"]', function () {
+                // 后触发
+                if ($(this).is(':checked')) {
+                    $(this).parent().css('color', 'rgba(0,0,0,1)');
+                } else {
+                    $(this).parent().css('color', 'rgba(0,0,0,0.5)');
+                }
+            });
+            let video_html = '';
+            for (let i = 0; i < total; i++) {
+                video_html += '' +
+                    `<label for="option_${i}"><div style="color:rgba(0,0,0,0.5);">
+                        <input type="checkbox" id="option_${i}" name="dl_video" value="${i}">
+                        P${i + 1} ${video_base.title(i + 1) || 'unknown'}
+                    </div></label>`;
+            }
+
+            let all_checked = false;
+            $('body').on('click', 'button#checkbox_btn', function () {
+                if (all_checked) {
+                    all_checked = false;
+                    $('input[name="dl_video"]').prop('checked', all_checked);
+                    $('input[name="dl_video"]').parent().css('color', 'rgba(0,0,0,0.5)');
+                } else {
+                    all_checked = true;
+                    $('input[name="dl_video"]').prop('checked', all_checked);
+                    $('input[name="dl_video"]').parent().css('color', 'rgb(0,0,0)');
+                }
+            });
+
+            const q_map = {
+                '120': '超清 4K',
+                '116': '高清 1080P60',
+                '112': '高清 1080P+',
+                '80': '高清 1080P',
+                '74': '高清 720P60',
+                '64': '高清 720P',
+                '48': '高清 720P (MP4)',
+                '32': '清晰 480P',
+                '16': '流畅 360P'
+            };
+            const msg = '' +
+                `<div style="margin:2% 0;">
+                    <label>视频格式：</label>
+                    <select name="format" id="dl_format">
+                        <option value="flv" selected>FLV</option>
+                        <option value="mp4">MP4</option>
+                    </select><br/>
+                    <span>番剧等视频类型不支持MP4请求</span>
+                    </div>
+                    <div style="margin:2% 0;">
+                        <label>视频质量：${q_map[`${q}`]}</label><br/>
+                        <span>播放器选择的视频质量，不存在则默认1080P</span>
+                    </div>
+                    <font color="red">请不要选择过多视频，视频地址有效时间不长，下载可能失败</font><br />
+                    <div style="height:240px;width:100%;overflow:auto;background:rgba(0,0,0,0.1);">
+                        ${video_html}
+                    </div>
+                    <button id="checkbox_btn">全选</button>
+                </div>`;
+            utils.MessageBox.confirm(msg, () => {
+                const videos = [];
+                for (let i = 0; i < total; i++) {
+                    if (!$(`input#option_${i}`).is(':checked')) {
+                        continue;
+                    }
+                    const p = i + 1;
+                    const [aid, cid, epid, filename] = [
+                        video_base.aid(p),
+                        video_base.cid(p),
+                        video_base.epid(p),
+                        video_base.filename(p)
+                    ];
+                    const format = $('#dl_format').val();
+                    videos.push({
+                        url: `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${q}&type=${type}&format=${format}&otype=json&auth_id=${auth_id}&auth_sec=${auth_sec}`,
+                        filename: filename
+                    });
+                }
+                const video_urls = [];
+                get_url(videos, 0, video_urls);
+
+            });
+
+            function get_url(videos, i, video_urls) {
+                // 单线递归处理
+                if (videos.length) {
+                    if (i < videos.length) {
+                        const video = videos[i];
+                        const msg = `第${i + 1}（${i + 1}/${videos.length}）个视频`;
+                        utils.MessageBox.alert(`${msg}：获取中...`);
+                        $.ajax(video.url, {
+                            type: 'GET',
+                            dataType: 'json',
+                            success: (res) => {
+                                if (!res.code) {
+                                    utils.MessageBox.alert(`${msg}：获取成功！`);
+                                    let video_format = '';
+                                    if (res.url.match('.flv')) {
+                                        video_format = '.flv';
+                                    } else if (res.url.match('.mp4')) {
+                                        video_format = '.mp4';
+                                    }
+                                    video_urls.push({
+                                        url: res.url,
+                                        filename: video.filename + video_format
+                                    });
+                                } else {
+                                    utils.Message.warning(`第${i + 1}个视频请求失败：` + res.message);
+                                }
+                                get_url(videos, ++i, video_urls);
+                            },
+                            error: () => {
+                                utils.Message.danger(`第${i + 1}个视频请求异常`);
+                                get_url(videos, ++i, video_urls);
+                            }
+                        });
+                    } else {
+                        utils.MessageBox.alert('视频地址获取完成，发送RPC下载请求');
+                        download_rpc_all(video_urls);
+                    }
+                }
+            }
+
+            function download_rpc_all(video_urls) {
+                const rpc = {
+                    domain: config.rpc_domain,
+                    port: config.rpc_port,
+                    token: config.rpc_token,
+                    dir: config.rpc_dir,
+                };
+                const json_rpc = [];
+                for (const video of video_urls) {
+                    json_rpc.push({
+                        id: window.btoa(`BParse_${Date.now()}_${Math.random()}`),
+                        jsonrpc: '2.0',
+                        method: 'aria2.addUri',
+                        params: [`token:${rpc.token}`, [video.url], {
+                            dir: rpc.dir,
+                            out: video.filename,
+                            header: [
+                                `User-Agent: ${window.navigator.userAgent}`,
+                                `Referer: ${window.location.href}`
+                            ]
+                        }]
+                    });
+                }
+                utils.Message.info('发送RPC下载请求');
+                $.ajax(`${rpc.domain}:${rpc.port}/jsonrpc`, {
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify(json_rpc),
+                    success: (res) => {
+                        if (res.length === json_rpc.length) {
+                            utils.Message.success('RPC请求成功');
+                        } else {
+                            utils.Message.warning('RPC请求失败');
+                        }
+                    },
+                    error: () => {
+                        utils.Message.danger('RPC请求异常，请确认RPC服务配置及软件运行状态');
+                    }
+                });
+            }
+
+        }
 
         function download_rpc(url, filename) {
             if (window.bp_download_rpc_clicked) {
@@ -765,7 +946,7 @@
                 }, 'confirm');
             }
         };
-        const components_css =
+        const components_css = '' +
             '<style>' +
             '.message-bg{position:fixed;float:right;right:0;top:2%;z-index:10001;}' +
             '.message{margin-bottom:15px;padding:4px 12px;width:300px;display:flex;margin-top:-70px;opacity:0;}' +
@@ -776,7 +957,7 @@
             '.message-context{font-size:21px;word-wrap:break-word;word-break:break-all;}' +
             '.message_box_btn{text-align:right;}.message_box_btn button{margin:0 5px;}' +
             '</style>';
-        const components_html =
+        const components_html = '' +
             '<div class="message-bg"></div>' +
             '<div id="message_box" style="opacity:0;display:none;position:fixed;inset:0px;top:0px;left:0px;width:100%;height:100%;background:rgba(0,0,0,0.7);animation-name:settings-bg;animation-duration:0.3s;z-index:10000;cursor:default;">' +
             '<div style="position:absolute;background:rgb(255,255,255);border-radius:10px;padding:20px;top:50%;left:50%;width:400px;transform:translate(-50%,-50%);cursor:default;">' +
@@ -875,23 +1056,29 @@
             if (_type === 'video') {
                 const state = window.__INITIAL_STATE__;
                 return {
-                    title: () => {
-                        const p = state.p || 1;
+                    total: () => {
+                        return state.videoData.pages.length || 1;
+                    },
+                    title: (_p) => {
+                        const p = _p || state.p || 1;
+                        return (state.videoData.pages[p - 1].part || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    filename: (_p) => {
+                        const p = _p || state.p || 1;
                         const title = (state.videoData && state.videoData.title || 'unknown') + ` P${p} （${state.videoData.pages[p - 1].part || p}）`;
                         return title.replace(/[\/\\:*?"<>|]+/g, '');
                     },
-                    aid: () => {
+                    aid: (_p) => {
                         return state.videoData.aid;
                     },
                     p: () => {
                         return state.p || 1;
                     },
-                    cid: () => {
-                        const aid = state.videoData.aid;
-                        const p = state.p || 1;
-                        return state.cidMap[aid].cids[p];
+                    cid: (_p) => {
+                        const p = _p || state.p || 1;
+                        return state.videoData.pages[p - 1].cid;
                     },
-                    epid: () => {
+                    epid: (_p) => {
                         return '';
                     },
                     need_vip: () => {
@@ -904,19 +1091,44 @@
             } else if (_type === 'bangumi') {
                 const state = window.__INITIAL_STATE__;
                 return {
-                    title: () => {
+                    total: () => {
+                        return state.epList.length;
+                    },
+                    title: (_p) => {
+                        let ep;
+                        if (_p) {
+                            ep = state.epList[_p - 1];
+                        } else {
+                            ep = state.epInfo;
+                        }
+                        return (`${ep.titleFormat} ${ep.longTitle}` || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    filename: (_p) => {
+                        if (_p) {
+                            const ep = state.epList[_p - 1];
+                            return (`${state.mediaInfo.season_title}：${ep.titleFormat} ${ep.longTitle}` || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                        }
                         return (state.h1Title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
                     },
-                    aid: () => {
+                    aid: (_p) => {
+                        if (_p) {
+                            return state.epList[_p - 1].aid;
+                        }
                         return state.epInfo.aid;
                     },
                     p: () => {
                         return state.epInfo.i || 1;
                     },
-                    cid: () => {
+                    cid: (_p) => {
+                        if (_p) {
+                            return state.epList[_p - 1].cid;
+                        }
                         return state.epInfo.cid;
                     },
-                    epid: () => {
+                    epid: (_p) => {
+                        if (_p) {
+                            return state.epList[_p - 1].id;
+                        }
                         return state.epInfo.id;
                     },
                     need_vip: () => {
@@ -928,22 +1140,38 @@
                 };
             } else if (_type === 'cheese') {
                 const episodes = window.PlayerAgent.getEpisodes();
-                const p_id = $('li.on.list-box-li').index() || 0;
+                const _id = $('li.on.list-box-li').index() || 0;
                 return {
-                    title: () => {
-                        return (episodes[p_id].title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    total: () => {
+                        return 3;
                     },
-                    aid: () => {
-                        return episodes[p_id].aid;
+                    title: (_p) => {
+                        let id = _id;
+                        _p && (id = _p - 1);
+                        return (episodes[id].title || 'unknown').replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    filename: (_p) => {
+                        let id = _id;
+                        _p && (id = _p - 1);
+                        return (`${$('div.season-info h1').html()} P${id + 1} （${episodes[id].title || 'unknown'}）`).replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    aid: (_p) => {
+                        let id = _id;
+                        _p && (id = _p - 1);
+                        return episodes[id].aid;
                     },
                     p: () => {
-                        return p_id + 1;
+                        return _id + 1;
                     },
-                    cid: () => {
-                        return episodes[p_id].cid;
+                    cid: (_p) => {
+                        let id = _id;
+                        _p && (id = _p - 1);
+                        return episodes[id].cid;
                     },
-                    epid: () => {
-                        return episodes[p_id].id;
+                    epid: (_p) => {
+                        let id = _id;
+                        _p && (id = _p - 1);
+                        return episodes[id].id;
                     },
                     need_vip: () => {
                         return false;
@@ -1047,30 +1275,33 @@
         setTimeout(function () {
             let my_toolbar;
             if (!!$('#arc_toolbar_report')[0]) {
-                my_toolbar =
+                my_toolbar = '' +
                     '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true"><div class="ops">' +
                     '<span id="setting_btn"><i class="van-icon-general_addto_s"></i>脚本设置</span>' +
                     '<span id="bilibili_parse"><i class="van-icon-floatwindow_custome"></i>请求地址</span>' +
                     '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>' +
                     '<span id="video_download_2" style="display:none"><i class="van-icon-download"></i>下载音频</span>' +
+                    '<span id="video_download_all"><i class="van-icon-download"></i>批量下载</span>' +
                     '</div></div>';
                 $('#arc_toolbar_report').after(my_toolbar);
             } else if (!!$('#toolbar_module')[0]) {
-                my_toolbar =
+                my_toolbar = '' +
                     '<div id="toolbar_module_2" class="tool-bar clearfix report-wrap-module report-scroll-module media-info" scrollshow="true">' +
                     '<div id="setting_btn" class="like-info"><i class="iconfont icon-add"></i><span>脚本设置</span></div>' +
                     '<div id="bilibili_parse" class="like-info"><i class="iconfont icon-customer-serv"></i><span>请求地址</span></div>' +
                     '<div id="video_download" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载视频</span></div>' +
                     '<div id="video_download_2" class="like-info" style="display:none"><i class="iconfont icon-download"></i><span>下载音频</span></div>' +
+                    '<div id="video_download_all" class="like-info"><i class="iconfont icon-download"></i><span>批量下载</span></div>' +
                     '</div>';
                 $('#toolbar_module').after(my_toolbar);
             } else if (!!$('div.video-toolbar')[0]) {
-                my_toolbar =
+                my_toolbar = '' +
                     '<div id="arc_toolbar_report_2" class="video-toolbar report-wrap-module report-scroll-module" scrollshow="true"><div class="ops">' +
                     '<span id="setting_btn"><i class="van-icon-general_addto_s"></i>脚本设置</span>' +
                     '<span id="bilibili_parse"><i class="van-icon-floatwindow_custome"></i>请求地址</span>' +
                     '<span id="video_download" style="display:none"><i class="van-icon-download"></i>下载视频</span>' +
                     '<span id="video_download_2" style="display:none"><i class="van-icon-download"></i>下载音频</span>' +
+                    '<span id="video_download_all"><i class="van-icon-download"></i>批量下载</span>' +
                     '</div></div>';
                 $('div.video-toolbar').after(my_toolbar);
             }
@@ -1085,6 +1316,21 @@
                 }
             }
             $('#my_config').show();
+        });
+        $('body').on('click', '#video_download_all', function () {
+            if (localStorage.getItem('bp_auth_id') && localStorage.getItem('bp_auth_sec')) {
+                if (config.download_type === 'rpc') {
+                    utils.Video.download_all();
+                } else {
+                    utils.MessageBox.confirm('仅支持使用RPC接口批量下载，请确保RPC环境正常，是否继续？', () => {
+                        utils.Video.download_all();
+                    });
+                }
+            } else {
+                utils.MessageBox.confirm('批量下载仅支持授权用户使用RPC接口下载，是否进行授权？', () => {
+                    window.bp_show_login();
+                });
+            }
         });
         $('body').on('click', '#video_download', function () {
             const type = config.download_type;
@@ -1104,7 +1350,7 @@
                     $('#video_url').attr('href'),
                     $('#video_url_2').attr('href')
                 ];
-                const video_title = VideoStatus.base().title();
+                const video_title = VideoStatus.base().filename();
                 let file_name, file_name_2;
                 if (video_url.match('.flv')) {
                     file_name = video_title + '.flv';
@@ -1134,7 +1380,7 @@
                 utils.MessageBox.alert(msg);
             } else {
                 const url = $('#video_url').attr('href');
-                let file_name = VideoStatus.base().title();
+                let file_name = VideoStatus.base().filename();
                 if (url.match('.flv')) {
                     file_name += '.flv';
                 } else if (url.match('.m4s')) {
@@ -1157,7 +1403,7 @@
                 $('#video_download')[0].click();
             } else {
                 const url = $('#video_url_2').attr('href');
-                let file_name = VideoStatus.base().title();
+                let file_name = VideoStatus.base().filename();
                 if (url.match('.m4s')) {
                     file_name += '_audio.mp4';
                 } else {
