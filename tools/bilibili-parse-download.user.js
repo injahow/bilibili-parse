@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.4.6
+// @version      1.4.7
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
-// @homepage     https://github.com/injahow/bilibili-parse
+// @source       https://github.com/injahow/bilibili-parse
 // @copyright    2021, injahow (https://github.com/injahow)
 // @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
 // @downloadURL  https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
@@ -522,8 +522,8 @@
                         <label>视频质量：${q_map[`${q}`]}</label><br/>
                         <span>播放器选择的视频质量，不存在则默认1080P</span>
                     </div>
-                    <font color="red">请不要选择过多视频，视频地址有效时间不长，下载可能失败</font><br />
-                    <div style="height:240px;width:100%;overflow:auto;background:rgba(0,0,0,0.1);">
+                    <b><font color="red">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！！！</font></b><br />
+                    <div style="height:220px;width:100%;overflow:auto;background:rgba(0,0,0,0.1);">
                         ${video_html}
                     </div>
                     <button id="checkbox_btn">全选</button>
@@ -543,7 +543,7 @@
                     ];
                     const format = $('#dl_format').val();
                     videos.push({
-                        url: `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${q}&type=${type}&format=${format}&otype=json&auth_id=${auth_id}&auth_sec=${auth_sec}`,
+                        url: `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${q}&type=${type}&format=${format}&otype=json&auth_id=${auth_id}&auth_sec=${auth_sec}&s`,
                         filename: filename
                     });
                 }
@@ -559,32 +559,36 @@
                         const video = videos[i];
                         const msg = `第${i + 1}（${i + 1}/${videos.length}）个视频`;
                         utils.MessageBox.alert(`${msg}：获取中...`);
-                        $.ajax(video.url, {
-                            type: 'GET',
-                            dataType: 'json',
-                            success: (res) => {
-                                if (!res.code) {
-                                    utils.MessageBox.alert(`${msg}：获取成功！`);
-                                    let video_format = '';
-                                    if (res.url.match('.flv')) {
-                                        video_format = '.flv';
-                                    } else if (res.url.match('.mp4')) {
-                                        video_format = '.mp4';
+                        setTimeout(function () {
+                            $.ajax(video.url, {
+                                type: 'GET',
+                                dataType: 'json',
+                                success: (res) => {
+                                    if (!res.code) {
+                                        utils.MessageBox.alert(`${msg}：获取成功！`);
+                                        let video_format = '';
+                                        if (res.url.match('.flv')) {
+                                            video_format = '.flv';
+                                        } else if (res.url.match('.mp4')) {
+                                            video_format = '.mp4';
+                                        }
+                                        video_urls.push({
+                                            url: res.url,
+                                            filename: video.filename + video_format
+                                        });
+                                    } else {
+                                        utils.Message.warning(`第${i + 1}个视频请求失败：` + res.message);
                                     }
-                                    video_urls.push({
-                                        url: res.url,
-                                        filename: video.filename + video_format
-                                    });
-                                } else {
-                                    utils.Message.warning(`第${i + 1}个视频请求失败：` + res.message);
+                                    setTimeout(function () {
+                                        get_url(videos, ++i, video_urls);
+                                    }, 1000);
+                                },
+                                error: () => {
+                                    utils.Message.danger(`第${i + 1}个视频请求异常`);
+                                    get_url(videos, ++i, video_urls);
                                 }
-                                get_url(videos, ++i, video_urls);
-                            },
-                            error: () => {
-                                utils.Message.danger(`第${i + 1}个视频请求异常`);
-                                get_url(videos, ++i, video_urls);
-                            }
-                        });
+                            });
+                        }, 3000);
                     } else {
                         utils.MessageBox.alert('视频地址获取完成，发送RPC下载请求');
                         download_rpc_all(video_urls);
