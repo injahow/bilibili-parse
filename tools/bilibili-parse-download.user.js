@@ -1,21 +1,21 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.4.7
+// @version      1.5.1
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
 // @copyright    2021, injahow (https://github.com/injahow)
 // @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
 // @downloadURL  https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
-// @match        *://www.bilibili.com/video/av*
-// @match        *://www.bilibili.com/video/BV*
-// @match        *://www.bilibili.com/medialist/play/ml*
-// @match        *://www.bilibili.com/bangumi/play/ep*
-// @match        *://www.bilibili.com/bangumi/play/ss*
-// @match        *://www.bilibili.com/cheese/play/ep*
-// @match        *://www.bilibili.com/cheese/play/ss*
-// @match        https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
+// @include      *://www.bilibili.com/video/av*
+// @include      *://www.bilibili.com/video/BV*
+// @include      *://www.bilibili.com/medialist/play/*
+// @include      *://www.bilibili.com/bangumi/play/ep*
+// @include      *://www.bilibili.com/bangumi/play/ss*
+// @include      *://www.bilibili.com/cheese/play/ep*
+// @include      *://www.bilibili.com/cheese/play/ss*
+// @include      https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
 // @require      https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js
 // @require      https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js
@@ -36,9 +36,10 @@
     (function () {
         UserStatus = {
             lazy_init,
-            is_login, vip_status, mid, need_replace
+            is_login, vip_status, mid, uname,
+            need_replace
         };
-        let _is_login = false, _vip_status = 0, _mid = '';
+        let _is_login = false, _vip_status = 0, _mid = '', _uname = '';
         let is_init = false;
 
         function lazy_init(last_init = false) {
@@ -47,19 +48,23 @@
                     _is_login = window.__BILI_USER_INFO__.isLogin;
                     _vip_status = window.__BILI_USER_INFO__.vipStatus;
                     _mid = window.__BILI_USER_INFO__.mid || '';
+                    _uname = window.__BILI_USER_INFO__.uname || '';
                 } else if (window.__BiliUser__) {
                     _is_login = window.__BiliUser__.isLogin;
                     if (window.__BiliUser__.cache) {
                         _vip_status = window.__BiliUser__.cache.data.vipStatus;
                         _mid = window.__BiliUser__.cache.data.mid || '';
+                        _uname = window.__BiliUser__.cache.data.uname || '';
                     } else {
                         _vip_status = 0;
                         _mid = '';
+                        _uname = '';
                     }
                 } else {
                     _is_login = false;
                     _vip_status = 0;
                     _mid = '';
+                    _uname = '';
                 }
                 is_init = last_init;
             }
@@ -75,6 +80,10 @@
 
         function mid() {
             return _mid;
+        }
+
+        function uname() {
+            return _uname;
         }
 
         function need_replace() {
@@ -100,6 +109,8 @@
         Auth = {
             check_login_status
         };
+
+        let auth_clicked = false;
 
         function check_login_status() {
             !localStorage.getItem('bp_remind_login') && localStorage.setItem('bp_remind_login', '1');
@@ -148,16 +159,16 @@
         }
 
         window.bp_show_login = function () {
-            if (window.auth_clicked) {
+            if (auth_clicked) {
                 utils.Message.info('(^・ω・^)~喵喵喵~');
                 return;
             }
-            window.auth_clicked = true;
+            auth_clicked = true;
             if (localStorage.getItem('bp_access_key')) {
                 utils.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
                     login();
                 }, () => {
-                    window.auth_clicked = false;
+                    auth_clicked = false;
                 });
             } else {
                 login();
@@ -182,13 +193,13 @@
                         utils.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                             location.href = 'https://passport.bilibili.com/login';
                         }, () => {
-                            window.auth_clicked = false;
+                            auth_clicked = false;
                         });
                     }
                 },
                 error: () => {
                     utils.Message.danger('授权请求异常');
-                    window.auth_clicked = false;
+                    auth_clicked = false;
                 }
             });
         }
@@ -198,14 +209,14 @@
                 localStorage.getItem('bp_auth_id') || '',
                 localStorage.getItem('bp_auth_sec') || ''
             ];
-            if (window.auth_clicked) {
+            if (auth_clicked) {
                 utils.Message.info('(^・ω・^)~喵喵喵~');
                 return;
             }
-            window.auth_clicked = true;
+            auth_clicked = true;
             if (!auth_id) {
                 utils.MessageBox.alert('没有发现授权记录');
-                window.auth_clicked = false;
+                auth_clicked = false;
                 return;
             }
             $.ajax(`${config.base_api}/auth/v2/?act=logout&auth_id=${auth_id}&auth_sec=${auth_sec}`, {
@@ -223,11 +234,11 @@
                     } else {
                         utils.Message.warning('取消失败');
                     }
-                    window.auth_clicked = false;
+                    auth_clicked = false;
                 },
                 error: () => {
                     utils.Message.danger('请求异常');
-                    window.auth_clicked = false;
+                    auth_clicked = false;
                 }
             });
         }
@@ -263,11 +274,11 @@
                         } else {
                             utils.Message.warning('授权失败');
                         }
-                        window.auth_clicked = false;
+                        auth_clicked = false;
                     },
                     error: () => {
                         utils.Message.danger('请求异常');
-                        window.auth_clicked = false;
+                        auth_clicked = false;
                     }
                 });
             }
@@ -307,13 +318,12 @@
         window.my_click_event = () => {
             // set config by form
             for (const key in config) {
-                if (Object.hasOwnProperty.call(config, key)) {
-                    config[key] = $(`#${key}`).val();
-                }
+                config[key] = $(`#${key}`).val();
             }
             const old_config = JSON.parse(localStorage.getItem('my_config_str'));
             localStorage.setItem('my_config_str', JSON.stringify(config));
             $('#my_config').hide();
+            utils.Scroll.show();
             // 判断是否需要重新请求
             for (const key of ['base_api', 'format', 'auth']) {
                 if (config[key] !== old_config[key]) {
@@ -326,12 +336,13 @@
         window.onbeforeunload = () => {
             window.my_click_event();
         };
+        let help_clicked = false;
         window.bp_show_help = () => {
-            if (window.help_clicked) {
+            if (help_clicked) {
                 utils.Message.info('(^・ω・^)~喵喵喵~');
                 return;
             }
-            window.help_clicked = true;
+            help_clicked = true;
             $.ajax(`${config.base_api}/auth/v2/?act=help`, {
                 dataType: 'text',
                 success: (result) => {
@@ -340,21 +351,21 @@
                     } else {
                         utils.Message.warning('获取失败');
                     }
-                    window.help_clicked = false;
+                    help_clicked = false;
                 },
                 error: (e) => {
                     utils.Message.danger('请求异常');
-                    window.help_clicked = false;
+                    help_clicked = false;
                     console.log('error', e);
                 }
             });
         };
         !window.bp_reset_config && (window.bp_reset_config = () => {
             for (const key in default_config) {
-                if (Object.hasOwnProperty.call(default_config, key)) {
-                    if (key === 'auth') continue;
-                    $(`#${key}`).val(default_config[key]);
+                if (key === 'auth') {
+                    continue;
                 }
+                $(`#${key}`).val(default_config[key]);
             }
         });
         const config_css = '' +
@@ -428,9 +439,7 @@
         $('body').append(config_html + config_css);
         // 初始化配置页面
         for (const key in config) {
-            if (Object.hasOwnProperty.call(config, key)) {
-                $(`#${key}`).val(config[key]);
-            }
+            $(`#${key}`).val(config[key]);
         }
     })();
 
@@ -439,7 +448,8 @@
         Video: {},
         Player: {},
         Message: {},
-        MessageBox: {}
+        MessageBox: {},
+        Scroll: {}
     };
     // components_init
     (function () {
@@ -481,7 +491,7 @@
                 video_html += '' +
                     `<label for="option_${i}"><div style="color:rgba(0,0,0,0.5);">
                         <input type="checkbox" id="option_${i}" name="dl_video" value="${i}">
-                        P${i + 1} ${video_base.title(i + 1) || 'unknown'}
+                        P${i + 1} ${video_base.title(i + 1)}
                     </div></label>`;
             }
 
@@ -515,17 +525,19 @@
                     <select name="format" id="dl_format">
                         <option value="flv" selected>FLV</option>
                         <option value="mp4">MP4</option>
-                    </select><br/>
-                    <span>番剧等视频类型不支持MP4请求</span>
-                    </div>
-                    <div style="margin:2% 0;">
-                        <label>视频质量：${q_map[`${q}`]}</label><br/>
-                        <span>播放器选择的视频质量，不存在则默认1080P</span>
-                    </div>
-                    <b><font color="red">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！！！</font></b><br />
-                    <div style="height:220px;width:100%;overflow:auto;background:rgba(0,0,0,0.1);">
-                        ${video_html}
-                    </div>
+                    </select>
+                </div>
+                <div style="margin:2% 0;">
+                    <label>视频质量：当前使用${q_map[`${q}`]}</label>
+                </div>
+                <b>
+                    <span style="color:red;">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！！！</span>
+                </b><br />
+                <div style="height:220px;width:100%;overflow:auto;background:rgba(0,0,0,0.1);">
+                    ${video_html}
+                </div>
+                <div>${VideoStatus.type() === 'medialist' ? '不支持多页视频，若需要请到视频原播放页面下载' : ''}</div>
+                <div style="margin:2% 0;">
                     <button id="checkbox_btn">全选</button>
                 </div>`;
             utils.MessageBox.confirm(msg, () => {
@@ -547,13 +559,11 @@
                         filename: filename
                     });
                 }
-                const video_urls = [];
-                get_url(videos, 0, video_urls);
-
+                get_url(videos, 0, []);
             });
 
             function get_url(videos, i, video_urls) {
-                // 单线递归处理
+                // 单线递归处理，请求下载同时进行，设置任务容量为4
                 if (videos.length) {
                     if (i < videos.length) {
                         const video = videos[i];
@@ -576,6 +586,10 @@
                                             url: res.url,
                                             filename: video.filename + video_format
                                         });
+                                        if (video_urls.length > 3) {
+                                            download_rpc_all(video_urls)
+                                            video_urls.length = 0;
+                                        }
                                     } else {
                                         utils.Message.warning(`第${i + 1}个视频请求失败：` + res.message);
                                     }
@@ -588,10 +602,13 @@
                                     get_url(videos, ++i, video_urls);
                                 }
                             });
-                        }, 3000);
+                        }, 2000);
                     } else {
-                        utils.MessageBox.alert('视频地址获取完成，发送RPC下载请求');
-                        download_rpc_all(video_urls);
+                        utils.MessageBox.alert('视频地址请求完成！');
+                        if (video_urls.length > 0) {
+                            download_rpc_all(video_urls);
+                            video_urls.length = 0;
+                        }
                     }
                 }
             }
@@ -636,15 +653,16 @@
                     }
                 });
             }
-
         }
 
+        let download_rpc_clicked = false;
+
         function download_rpc(url, filename) {
-            if (window.bp_download_rpc_clicked) {
+            if (download_rpc_clicked) {
                 utils.Message.warning('(^・ω・^)~喵喵喵~');
                 return;
             }
-            window.bp_download_rpc_clicked = true;
+            download_rpc_clicked = true;
             const rpc = {
                 domain: config.rpc_domain,
                 port: config.rpc_port,
@@ -675,34 +693,36 @@
                     } else {
                         utils.Message.warning('RPC请求失败');
                     }
-                    window.bp_download_rpc_clicked = false;
+                    download_rpc_clicked = false;
                 },
                 error: () => {
                     utils.Message.danger('RPC请求异常，请确认RPC服务配置及软件运行状态');
-                    window.bp_download_rpc_clicked = false;
+                    download_rpc_clicked = false;
                 }
             });
         }
 
+        let download_blob_clicked = false, need_show_progress = true;
+
         function show_progress({ total, loaded, percent }) {
-            if (window.bp_show_progress) {
+            if (need_show_progress) {
                 utils.MessageBox.alert(`文件大小：${Math.floor(total / (1024 * 1024))}MB(${total}Byte)<br/>` +
                     `已经下载：${Math.floor(loaded / (1024 * 1024))}MB(${loaded}Byte)<br/>` +
                     `当前进度：${percent}%<br/>下载中请勿操作浏览器！`, () => {
-                        window.bp_show_progress = false;
+                        need_show_progress = false;
                         utils.MessageBox.alert('注意：刷新或离开页面会导致下载取消！<br/>再次点击下载按钮可查看下载进度。');
                     });
             }
             if (total === loaded) {
                 utils.MessageBox.alert('下载完成，请等待浏览器保存！');
-                window.bp_download_blob_clicked = false;
+                download_blob_clicked = false;
             }
         }
 
         function download_blob(url, filename) {
-            if (window.bp_download_blob_clicked) {
+            if (download_blob_clicked) {
                 utils.Message.warning('(^・ω・^)~喵喵喵~');
-                window.bp_show_progress = true;
+                need_show_progress = true;
                 return;
             }
             const xhr = new XMLHttpRequest();
@@ -725,7 +745,7 @@
                     URL.revokeObjectURL(blob_url);
                 }
             };
-            window.bp_show_progress = true;
+            need_show_progress = true;
             xhr.onprogress = function (evt) {
                 if (this.state != 4) {
                     const loaded = evt.loaded;
@@ -738,7 +758,7 @@
                 }
             };
             xhr.send();
-            window.bp_download_blob_clicked = true; // locked
+            download_blob_clicked = true; // locked
             utils.Message.info('准备开始下载');
         }
 
@@ -985,17 +1005,20 @@
                 $('div#message_box_context').html('<div style="font-size:18px">╰(￣▽￣)╮</div>');
             }
             $('#message_box').show();
+            hide_scroll();
             $('div#message_box').animate({
                 'opacity': '1'
             }, 300);
             $('div.message_box_btn button[name="affirm"]')[0].onclick = () => {
                 $('div#message_box').hide();
+                show_scroll();
                 if (ctx.callback && ctx.callback.affirm) {
                     ctx.callback.affirm();
                 }
             };
             $('div.message_box_btn button[name="cancel"]')[0].onclick = () => {
                 $('div#message_box').hide();
+                show_scroll();
                 if (ctx.callback && ctx.callback.cancel) {
                     ctx.callback.cancel();
                 }
@@ -1031,6 +1054,23 @@
         }
 
         $('body').append(components_html + components_css);
+
+        // Scroll 滚动条
+        utils.Scroll = {
+            show: show_scroll,
+            hide: hide_scroll
+        };
+
+        function show_scroll() {
+            if ($('div#message_box').is(':hidden') && $('div#my_config').is(':hidden')) {
+                $('body').css('overflow', 'auto');
+            }
+        }
+
+        function hide_scroll() {
+            $('body').css('overflow', 'hidden');
+        }
+
     })();
 
     // error page redirect -> ss / ep
@@ -1049,13 +1089,13 @@
         function type() {
             if (location.pathname.match('/cheese/play/')) {
                 return 'cheese';
-            } else if (location.pathname.match('/medialist/play/ml')) {
+            } else if (location.pathname.match('/medialist/play/')) {
+                // -/ml*/* or -/watchlater/*
                 return 'medialist';
             } else if (!window.__INITIAL_STATE__) {
                 // todo
                 return '?';
-            }
-            if (!!window.__INITIAL_STATE__.epInfo) {
+            } else if (!!window.__INITIAL_STATE__.epInfo) {
                 return 'bangumi';
             } else if (!!window.__INITIAL_STATE__.videoData) {
                 return 'video';
@@ -1089,6 +1129,52 @@
                     cid: (_p) => {
                         const p = _p || state.p || 1;
                         return state.videoData.pages[p - 1].cid;
+                    },
+                    epid: (_p) => {
+                        return '';
+                    },
+                    need_vip: () => {
+                        return false;
+                    },
+                    vip_need_pay: () => {
+                        return false;
+                    }
+                };
+            } else if (_type === 'medialist') {
+                const medialist = $('div.player-auxiliary-playlist-item');
+                const _id = $('div.player-auxiliary-playlist-item.player-auxiliary-playlist-item-active').index();
+                const collect_name = $('.player-auxiliary-playlist-top .player-auxiliary-filter-title').html();
+                let owner_name;
+                if (location.pathname.match('/medialist/play/watchlater/')) {
+                    owner_name = UserStatus.uname();
+                } else {
+                    owner_name = $('.player-auxiliary-playlist-user .player-auxiliary-playlist-ownerName').html();
+                }
+                return {
+                    type: 'video',
+                    total: () => {
+                        return medialist.length;
+                    },
+                    title: (_p) => {
+                        let id = _p ? (_p - 1) : _id;
+                        const title = medialist.eq(id).find('.player-auxiliary-playlist-item-title').attr('title') || 'unknown';
+                        return title.replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    filename: (_p) => {
+                        let id = _p ? (_p - 1) : _id;
+                        const title = medialist.eq(id).find('.player-auxiliary-playlist-item-title').attr('title') || 'unknown';
+                        return (`${owner_name}-${collect_name} P${id + 1} （${title}）`).replace(/[\/\\:*?"<>|]+/g, '');
+                    },
+                    aid: (_p) => {
+                        let id = _p ? (_p - 1) : _id;
+                        return medialist.eq(id).attr('data-aid');
+                    },
+                    p: () => {
+                        return _id + 1;
+                    },
+                    cid: (_p) => {
+                        let id = _p ? (_p - 1) : _id;
+                        return medialist.eq(id).attr('data-cid');
                     },
                     epid: (_p) => {
                         return '';
@@ -1189,46 +1275,18 @@
                         return false;
                     }
                 };
-            } else if (_type === 'medialist') {
-                const medialist = $('div.player-auxiliary-playlist-item');
-                const _id = $('div.player-auxiliary-playlist-item.player-auxiliary-playlist-item-active').index();
-                const owner_name = $('.player-auxiliary-playlist-user .player-auxiliary-playlist-ownerName').html();
-                const collect_name = $('.player-auxiliary-playlist-top .player-auxiliary-filter-title').html();
+            } else { // error
                 return {
-                    type: 'video',
-                    total: () => {
-                        return medialist.length;
-                    },
-                    title: (_p) => {
-                        let id = _p ? (_p - 1) : _id;
-                        const title = medialist.eq(id).find('.player-auxiliary-playlist-item-title').attr('title') || 'unknown';
-                        return title.replace(/[\/\\:*?"<>|]+/g, '');
-                    },
-                    filename: (_p) => {
-                        let id = _p ? (_p - 1) : _id;
-                        const title = medialist.eq(id).find('.player-auxiliary-playlist-item-title').attr('title') || 'unknown';
-                        return (`${owner_name}-${collect_name} P${id + 1} （${title}）`).replace(/[\/\\:*?"<>|]+/g, '');
-                    },
-                    aid: (_p) => {
-                        let id = _p ? (_p - 1) : _id;
-                        return medialist.eq(id).attr('data-aid');
-                    },
-                    p: () => {
-                        return _id + 1;
-                    },
-                    cid: (_p) => {
-                        let id = _p ? (_p - 1) : _id;
-                        return medialist.eq(id).attr('data-cid');
-                    },
-                    epid: (_p) => {
-                        return '';
-                    },
-                    need_vip: () => {
-                        return false;
-                    },
-                    vip_need_pay: () => {
-                        return false;
-                    }
+                    type: '?',
+                    total: () => { return 0; },
+                    title: (_p) => { return ''; },
+                    filename: (_p) => { return ''; },
+                    aid: (_p) => { return ''; },
+                    p: () => { return 1; },
+                    cid: (_p) => { return ''; },
+                    epid: (_p) => { return ''; },
+                    need_vip: () => { return false; },
+                    vip_need_pay: () => { return false; }
                 };
             }
         }
@@ -1362,11 +1420,10 @@
         $('body').on('click', '#setting_btn', function () {
             // set form by config
             for (const key in config) {
-                if (Object.hasOwnProperty.call(config, key)) {
-                    $(`#${key}`).val(config[key]);
-                }
+                $(`#${key}`).val(config[key]);
             }
             $('#my_config').show();
+            utils.Scroll.hide();
         });
 
         $('body').on('click', '#video_download_all', function () {
