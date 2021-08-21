@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.0
+// @version      1.6.1
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -158,7 +158,7 @@
             localStorage.setItem('bp_pre_base_api', config.base_api);
         }
 
-        window.bp_show_login = function () {
+        window.bp_show_login = function (auto = '1') {
             if (auth_clicked) {
                 utils.Message.info('(^・ω・^)~喵喵喵~');
                 return;
@@ -166,12 +166,20 @@
             auth_clicked = true;
             if (localStorage.getItem('bp_access_key')) {
                 utils.MessageBox.confirm('发现授权记录，是否重新授权？', () => {
-                    login();
+                    if (auto === '1') {
+                        login();
+                    } else {
+                        login_manual();
+                    }
                 }, () => {
                     auth_clicked = false;
                 });
             } else {
-                login();
+                if (auto === '1') {
+                    login();
+                } else {
+                    login_manual();
+                }
             }
         }
 
@@ -190,6 +198,63 @@
                         auth_window.location.href = res.data.confirm_uri;
                     } else {
                         auth_window.close();
+                        utils.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
+                            location.href = 'https://passport.bilibili.com/login';
+                        }, () => {
+                            auth_clicked = false;
+                        });
+                    }
+                },
+                error: () => {
+                    utils.Message.danger('授权请求异常');
+                    auth_clicked = false;
+                }
+            });
+        }
+
+        function login_manual() {
+            $.ajax('https://passport.bilibili.com/login/app/third?appkey=27eb53fc9058f8c3&api=https%3A%2F%2Fwww.mcbbs.net%2Ftemplate%2Fmcbbs%2Fimage%2Fspecial_photo_bg.png&sign=04224646d1fea004e79606d3b038c84a', {
+                xhrFields: { withCredentials: true },
+                type: 'GET',
+                dataType: 'json',
+                success: (res) => {
+                    if (res.data.has_login) {
+                        const msg = '' +
+                            `请点击<b><a href="${res.data.confirm_uri}" target="_blank">授权地址</a></b>打开一个新窗口，正常情况新窗口应该显示一个用户头像，请将该窗口地址栏的URL链接复制到当前文本框中<br/>
+                            <input id="auth_url" style="width:100%" type="text" autocomplete="off"><br>
+                            然后点击确认即可`;
+                        utils.MessageBox.alert(msg, () => {
+                            const auth_url = $('#auth_url').val();
+                            const [auth_id, auth_sec] = [
+                                localStorage.getItem('bp_auth_id') || '',
+                                localStorage.getItem('bp_auth_sec') || ''
+                            ];
+                            $.ajax(auth_url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/v2/?act=login&auth_id=${auth_id}&auth_sec=${auth_sec}&`), {
+                                type: 'GET',
+                                dataType: 'json',
+                                success: (res) => {
+                                    if (!res.code) {
+                                        utils.Message.success('授权成功');
+                                        if (res.auth_id && res.auth_sec) {
+                                            localStorage.setItem('bp_auth_id', res.auth_id);
+                                            localStorage.setItem('bp_auth_sec', res.auth_sec);
+                                        }
+                                        localStorage.setItem('bp_access_key', new URL(auth_url).searchParams.get('access_key'));
+                                        localStorage.setItem('bp_auth_time', Date.now());
+                                        $('#auth').val('1');
+                                        config.auth = '1';
+                                    } else {
+                                        utils.Message.warning('授权失败');
+                                    }
+                                    auth_clicked = false;
+                                },
+                                error: () => {
+                                    utils.Message.danger('请求异常');
+                                    auth_clicked = false;
+                                }
+                            });
+                        });
+                    } else {
                         utils.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                             location.href = 'https://passport.bilibili.com/login';
                         }, () => {
@@ -257,7 +322,7 @@
                     localStorage.getItem('bp_auth_id') || '',
                     localStorage.getItem('bp_auth_sec') || ''
                 ];
-                $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/v2/?act=login&auth_id=${auth_id}&auth_sec=${auth_sec}&vip_status=${UserStatus.vip_status()}&`), {
+                $.ajax(url.replace('https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png?', `${config.base_api}/auth/v2/?act=login&auth_id=${auth_id}&auth_sec=${auth_sec}&`), {
                     type: 'GET',
                     dataType: 'json',
                     success: (res) => {
@@ -429,6 +494,7 @@
                         </select>
                         <a class="setting-context" href="javascript:;" onclick="bp_show_login()">账号授权</a>
                         <a class="setting-context" href="javascript:;" onclick="bp_show_logout()">取消授权</a>
+                        <a class="setting-context" href="javascript:;" onclick="bp_show_login('0')">手动授权</a>
                         <a class="setting-context" href="javascript:;" onclick="bp_show_login_help()">这是什么？</a>
                     </div>
                     <div style="text-align:right"><br />
