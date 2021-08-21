@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.5.1
+// @version      1.6.0
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -835,76 +835,138 @@
                 }
             }
             $('#player_mask_module').hide();
-            window.my_dplayer = new DPlayer({
-                container: $('#my_dplayer')[0],
-                mutex: false,
-                video: {
-                    url: url,
-                    type: 'auto'
-                },
-                danmaku: true,
-                apiBackend: {
-                    read: function (options) {
-                        request_danmaku(options, VideoStatus.base().cid());
-                    },
-                    send: function (options) { // ?
-                        options.error('此脚本无法将弹幕同步到云端');
-                    }
-                },
-                contextmenu: [
-                    {
-                        text: '脚本信息',
-                        link: 'https://github.com/injahow/bilibili-parse'
-                    },
-                    {
-                        text: '脚本作者',
-                        link: 'https://injahow.com'
-                    }
-                ]
-            });
-            if (config.format === 'dash' && url_2 && url_2 !== '#') {
-                $('body').append('<div id="my_dplayer_2" style="display:none"></div>');
-                window.my_dplayer_2 = new DPlayer({
-                    container: $('#my_dplayer_2')[0],
+            const dplayer_init = (subtitle_url = '') => {
+                window.my_dplayer = new DPlayer({
+                    container: $('#my_dplayer')[0],
                     mutex: false,
+                    volume: 1,
+                    autoplay: true,
                     video: {
-                        url: url_2,
+                        url: url,
                         type: 'auto'
-                    }
+                    },
+                    subtitle: {
+                        url: subtitle_url,
+                        type: 'webvtt',
+                        fontSize: '35px',
+                        bottom: '5%',
+                        color: '#fff',
+                    },
+                    danmaku: true,
+                    apiBackend: {
+                        read: function (options) {
+                            request_danmaku(options, VideoStatus.base().cid());
+                        },
+                        send: function (options) { // ?
+                            options.error('此脚本无法将弹幕同步到云端');
+                        }
+                    },
+                    contextmenu: [
+                        {
+                            text: '脚本信息',
+                            link: 'https://github.com/injahow/bilibili-parse'
+                        },
+                        {
+                            text: '脚本作者',
+                            link: 'https://injahow.com'
+                        }
+                    ]
                 });
-                const my_dplayer = window.my_dplayer;
-                const my_dplayer_2 = window.my_dplayer_2;
-                my_dplayer.on('play', function () {
-                    !my_dplayer.paused && my_dplayer_2.play();
-                });
-                my_dplayer.on('playing', function () {
-                    !my_dplayer.paused && my_dplayer_2.play();
-                });
-                my_dplayer.on('timeupdate', function () {
-                    if (Math.abs(my_dplayer.video.currentTime - my_dplayer_2.video.currentTime) > 1) {
+
+                if (config.format === 'dash' && url_2 && url_2 !== '#') {
+                    $('body').append('<div id="my_dplayer_2" style="display:none"></div>');
+                    window.my_dplayer_2 = new DPlayer({
+                        container: $('#my_dplayer_2')[0],
+                        mutex: false,
+                        volume: 1,
+                        autoplay: true,
+                        video: {
+                            url: url_2,
+                            type: 'auto'
+                        }
+                    });
+                    const my_dplayer = window.my_dplayer;
+                    const my_dplayer_2 = window.my_dplayer_2;
+                    my_dplayer.on('play', function () {
+                        !my_dplayer.paused && my_dplayer_2.play();
+                    });
+                    my_dplayer.on('playing', function () {
+                        !my_dplayer.paused && my_dplayer_2.play();
+                    });
+                    my_dplayer.on('timeupdate', function () {
+                        if (Math.abs(my_dplayer.video.currentTime - my_dplayer_2.video.currentTime) > 1) {
+                            my_dplayer_2.pause();
+                            my_dplayer_2.seek(my_dplayer.video.currentTime);
+                        }
+                        !my_dplayer.paused && my_dplayer_2.play();
+                    });
+                    my_dplayer.on('seeking', function () {
                         my_dplayer_2.pause();
                         my_dplayer_2.seek(my_dplayer.video.currentTime);
-                    }
-                    !my_dplayer.paused && my_dplayer_2.play();
-                });
-                my_dplayer.on('seeking', function () {
-                    my_dplayer_2.pause();
-                    my_dplayer_2.seek(my_dplayer.video.currentTime);
-                });
-                my_dplayer.on('waiting', function () {
-                    my_dplayer_2.pause();
-                });
-                my_dplayer.on('pause', function () {
-                    my_dplayer_2.pause();
-                });
-                my_dplayer.on('suspend', function () {
-                    my_dplayer_2.speed(my_dplayer.video.playbackRate);
-                });
-                my_dplayer.on('volumechange', function () {
-                    my_dplayer_2.volume(my_dplayer.video.volume);
-                    my_dplayer_2.video.muted = my_dplayer.video.muted;
-                });
+                    });
+                    my_dplayer.on('waiting', function () {
+                        my_dplayer_2.pause();
+                        my_dplayer_2.seek(my_dplayer.video.currentTime);
+                    });
+                    my_dplayer.on('pause', function () {
+                        my_dplayer_2.pause();
+                        my_dplayer_2.seek(my_dplayer.video.currentTime);
+                    });
+                    my_dplayer.on('suspend', function () {
+                        my_dplayer_2.speed(my_dplayer.video.playbackRate);
+                    });
+                    my_dplayer.on('volumechange', function () {
+                        my_dplayer_2.volume(my_dplayer.video.volume);
+                        my_dplayer_2.video.muted = my_dplayer.video.muted;
+                    });
+                }
             }
+            // 判断是否需要字幕
+            if (VideoStatus.base().is_limited()) {
+                get_subtitle_url(dplayer_init);
+            } else {
+                dplayer_init();
+            }
+        }
+
+        function get_subtitle_url(dplayer_init) {
+            const video_base = VideoStatus.base();
+            const [aid, cid, epid] = [
+                video_base.aid(),
+                video_base.cid(),
+                video_base.epid()
+            ];
+            $.ajax(`https://api.bilibili.com/x/player/v2?aid=${aid}&cid=${cid}&ep_id=${epid}`, {
+                dataType: 'json',
+                success: res => {
+                    if (!res.code && res.data.subtitle.subtitles[0]) {
+                        $.ajax(`${res.data.subtitle.subtitles[0].subtitle_url}`, {
+                            dataType: 'json',
+                            success: res => {
+                                // json -> webvtt -> blob_url
+                                const datas = res.body || [{ from: 0, to: 0, content: '' }];
+                                let webvtt = 'WEBVTT\n\n';
+                                for (let data of datas) {
+                                    const a = new Date((parseInt(data.from) - 8 * 60 * 60) * 1000).toTimeString().split(' ')[0] +
+                                        '.' + (data.from.toString().split('.')[1] || '000').padEnd(3, '0');
+                                    const b = new Date((parseInt(data.to) - 8 * 60 * 60) * 1000).toTimeString().split(' ')[0] +
+                                        '.' + (data.to.toString().split('.')[1] || '000').padEnd(3, '0');
+                                    webvtt += `${a} --> ${b}\n${data.content}\n`;
+                                }
+                                dplayer_init(URL.createObjectURL(new Blob([webvtt], { type: 'text/vtt' })));
+                            },
+                            error: _ => {
+                                dplayer_init();
+                            }
+                        });
+                    } else {
+                        dplayer_init();
+                    }
+                },
+                error: _ => {
+                    dplayer_init();
+                }
+            });
         }
 
         function bili_video_tag() {
@@ -913,7 +975,6 @@
             } else if (!!$('bwp-video')[0]) {
                 return 'bwp-video';
             }
-            return '';
         }
 
         function bili_video_stop() { // listener
@@ -938,7 +999,7 @@
                     $('#my_dplayer_2').remove();
                 }
                 $(bili_player_id).show();
-                /*$('#player_mask_module').show();*/
+                //$('#player_mask_module').show();
             }
         }
 
@@ -1062,7 +1123,7 @@
         };
 
         function show_scroll() {
-            if ($('div#message_box').is(':hidden') && $('div#my_config').is(':hidden')) {
+            if ($('div#my_config').is(':hidden') && $('div#message_box').is(':hidden')) {
                 $('body').css('overflow', 'auto');
             }
         }
@@ -1138,6 +1199,9 @@
                     },
                     vip_need_pay: () => {
                         return false;
+                    },
+                    is_limited: () => {
+                        return false;
                     }
                 };
             } else if (_type === 'medialist') {
@@ -1183,6 +1247,9 @@
                         return false;
                     },
                     vip_need_pay: () => {
+                        return false;
+                    },
+                    is_limited: () => {
                         return false;
                     }
                 };
@@ -1235,6 +1302,9 @@
                     },
                     vip_need_pay: () => {
                         return state.epPayMent.vipNeedPay;
+                    },
+                    is_limited: () => {
+                        return state.epInfo.badge === '受限';
                     }
                 };
             } else if (_type === 'cheese') {
@@ -1273,6 +1343,9 @@
                     },
                     vip_need_pay: () => {
                         return false;
+                    },
+                    is_limited: () => {
+                        return false;
                     }
                 };
             } else { // error
@@ -1286,7 +1359,8 @@
                     cid: (_p) => { return ''; },
                     epid: (_p) => { return ''; },
                     need_vip: () => { return false; },
-                    vip_need_pay: () => { return false; }
+                    vip_need_pay: () => { return false; },
+                    is_limited: () => { return false; }
                 };
             }
         }
@@ -1551,7 +1625,7 @@
                 if (url && url !== '#') {
                     $('#video_download').show();
                     config.format === 'dash' && $('#video_download_2').show();
-                    if (UserStatus.need_replace() || config.replace_force === '1') {
+                    if (UserStatus.need_replace() || video_base.is_limited() || config.replace_force === '1') {
                         !$('#my_dplayer')[0] && utils.Player.replace(url, url_2);
                     }
                 }
@@ -1567,15 +1641,15 @@
                 success: (res) => {
                     if (res && !res.code) {
                         utils.Message.success('请求成功');
-                        const url = config.format === 'dash' ? res.video.replace(/^https?\:\/\//i, 'https://') : res.url.replace(/^https?\:\/\//i, 'https://');
-                        const url_2 = config.format === 'dash' ? res.audio.replace(/^https?\:\/\//i, 'https://') : '#';
+                        const url = config.format === 'dash' ? res.video.replace('http://', 'https://') : res.url.replace('http://', 'https://');
+                        const url_2 = config.format === 'dash' ? res.audio.replace('http://', 'https://') : '#';
                         $('#video_url').attr('href', url);
                         $('#video_download').show();
                         if (config.format === 'dash') {
                             $('#video_url_2').attr('href', url_2);
                             $('#video_download_2').show();
                         }
-                        if (UserStatus.need_replace() || config.replace_force === '1') {
+                        if (UserStatus.need_replace() || video_base.is_limited() || config.replace_force === '1') {
                             utils.Player.replace(url, url_2);
                         }
                     } else {
