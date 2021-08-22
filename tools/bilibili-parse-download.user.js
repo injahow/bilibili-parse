@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.1
+// @version      1.6.2
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -831,7 +831,8 @@
         // Player
         utils.Player = {
             replace: replace_player,
-            recover: recover_player
+            recover: recover_player,
+            tag: bili_video_tag
         };
 
         function request_danmaku(options, _cid) {
@@ -1449,10 +1450,13 @@
     })();
 
     // check
-    const check = {
-        aid: '', cid: '', q: '', epid: ''
-    };
+    let Check;
     (function () {
+        Check = {
+            aid: '', cid: '', q: '', epid: '',
+            refresh
+        };
+
         function refresh() {
             //utils.Message.info('refresh...');
             console.log('refresh...');
@@ -1461,12 +1465,12 @@
             utils.Player.recover();
             // 更新check
             const video_base = VideoStatus.base();
-            [check.aid, check.cid, check.epid] = [
+            [Check.aid, Check.cid, Check.epid] = [
                 video_base.aid(),
                 video_base.cid(),
                 video_base.epid()
             ];
-            check.q = VideoStatus.get_quality().q;
+            Check.q = VideoStatus.get_quality().q;
         }
 
         // 监听p
@@ -1481,7 +1485,8 @@
         $('body').on('click', 'button.bilibili-player-iconfont-next', function () {
             refresh();
         });
-        !!$('video[crossorigin="anonymous"]')[0] && ($('video[crossorigin="anonymous"]')[0].onended = function () {
+        const bili_video_tag = utils.Player.tag();
+        !!$(bili_video_tag)[0] && ($(bili_video_tag)[0].onended = function () {
             refresh();
         });
         // 监听q
@@ -1489,11 +1494,11 @@
             refresh();
         });
         setInterval(function () {
-            if (check.q !== VideoStatus.get_quality().q) {
+            if (Check.q !== VideoStatus.get_quality().q) {
                 refresh();
             } else if (VideoStatus.type() === 'cheese') {
                 // epid for cheese
-                if (check.epid !== VideoStatus.base().epid()) {
+                if (Check.epid !== VideoStatus.base().epid()) {
                     refresh();
                 }
             }
@@ -1508,7 +1513,7 @@
         // 定时检查 aid 和 cid
         setInterval(function () {
             const video_base = VideoStatus.base();
-            if (check.aid !== video_base.aid() || check.cid !== video_base.cid()) {
+            if (Check.aid !== video_base.aid() || Check.cid !== video_base.cid()) {
                 refresh();
             }
         }, 3000);
@@ -1555,6 +1560,7 @@
             }
             UserStatus.lazy_init();
             Auth.check_login_status();
+            Check.refresh();
         }, 3000);
 
         $('body').on('click', '#setting_btn', function () {
