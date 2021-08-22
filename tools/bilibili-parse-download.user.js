@@ -97,10 +97,9 @@
     (function () {
         // https://greasyfork.org/zh-CN/scripts/25718-%E8%A7%A3%E9%99%A4b%E7%AB%99%E5%8C%BA%E5%9F%9F%E9%99%90%E5%88%B6/code
         if (location.href.match(/^https:\/\/www\.mcbbs\.net\/template\/mcbbs\/image\/special_photo_bg\.png/) != null) {
-            if (location.href.match('access_key') != null && window.opener != null) {
+            if (location.href.match('access_key') && window !== window.parent) {
                 window.stop();
-                document.children[0].innerHTML = '<title>bilibili-parse - 授权</title><meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
-                window.opener.postMessage('bilibili-parse-login-credentials: ' + location.href, '*');
+                window.parent.postMessage('bilibili-parse-login-credentials: ' + location.href, '*');
             }
             Auth = null;
             return;
@@ -184,20 +183,14 @@
         }
 
         function login() {
-            const auth_window = window.open('about:blank');
-            auth_window.document.title = 'bilbili-parse - 授权';
-            auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在获取授权，请稍候……';
-            window.auth_window = auth_window;
             $.ajax('https://passport.bilibili.com/login/app/third?appkey=27eb53fc9058f8c3&api=https%3A%2F%2Fwww.mcbbs.net%2Ftemplate%2Fmcbbs%2Fimage%2Fspecial_photo_bg.png&sign=04224646d1fea004e79606d3b038c84a', {
                 xhrFields: { withCredentials: true },
                 type: 'GET',
                 dataType: 'json',
                 success: (res) => {
                     if (res.data.has_login) {
-                        auth_window.document.body.innerHTML = '<meta charset="UTF-8" name="viewport" content="width=device-width">正在跳转……';
-                        auth_window.location.href = res.data.confirm_uri;
+                        $('body').append(`<iframe id="auth_iframe" src="${res.data.confirm_uri}" style="display:none"></iframe>`);
                     } else {
-                        auth_window.close();
                         utils.MessageBox.confirm('必须登录B站才能正常授权，是否登陆？', () => {
                             location.href = 'https://passport.bilibili.com/login';
                         }, () => {
@@ -222,7 +215,7 @@
                         const msg = '' +
                             `请点击<b><a href="${res.data.confirm_uri}" target="_blank">授权地址</a></b>打开一个新窗口，正常情况新窗口应该显示一个用户头像，请将该窗口地址栏的URL链接复制到当前文本框中<br/>
                             <input id="auth_url" style="width:100%" type="text" autocomplete="off"><br>
-                            然后点击确认即可`;
+                            然后点击确定即可`;
                         utils.MessageBox.alert(msg, () => {
                             const auth_url = $('#auth_url').val();
                             const [auth_id, auth_sec] = [
@@ -313,10 +306,9 @@
             });
         }
         window.addEventListener('message', function (e) {
-            var _a;
             if (typeof e.data !== 'string') return;
             if (e.data.split(':')[0] === 'bilibili-parse-login-credentials') {
-                (_a = window.auth_window) === null || _a === void 0 ? void 0 : _a.close();
+                $('iframe#auth_iframe').remove();
                 let url = e.data.split(': ')[1];
                 const [auth_id, auth_sec] = [
                     localStorage.getItem('bp_auth_id') || '',
@@ -380,7 +372,7 @@
                 }
             }
         }
-        window.my_click_event = () => {
+        window.bp_save_config = () => {
             // set config by form
             for (const key in config) {
                 config[key] = $(`#${key}`).val();
@@ -399,7 +391,7 @@
             }
         };
         window.onbeforeunload = () => {
-            window.my_click_event();
+            window.bp_save_config();
         };
         let help_clicked = false;
         window.bp_show_help = () => {
@@ -498,7 +490,7 @@
                         <a class="setting-context" href="javascript:;" onclick="bp_show_login_help()">这是什么？</a>
                     </div>
                     <div style="text-align:right"><br />
-                        <button class="setting-button" onclick="my_click_event()">确定</button>
+                        <button class="setting-button" onclick="bp_save_config()">确定</button>
                     </div>
                 </div>
             </div>`;
