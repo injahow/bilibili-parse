@@ -16,7 +16,7 @@
 // @include      *://www.bilibili.com/cheese/play/ep*
 // @include      *://www.bilibili.com/cheese/play/ss*
 // @include      https://www.mcbbs.net/template/mcbbs/image/special_photo_bg.png*
-// @require      https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js
+// @require      https://static.hdslb.com/js/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js
 // @require      https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js
 // @compatible   chrome
@@ -467,8 +467,8 @@
                         <select name="download_type" id="download_type">
                             <option value="a">URL链接</option>
                             <option value="web">Web浏览器</option>
-                            <option value="rpc">RPC接口</option>
                             <option value="blob">Blob请求</option>
+                            <option value="rpc">RPC接口</option>
                             <option value="aria">Aria命令</option>
                         </select><br />
                         <small>提示：web和url方式下载不会设置文件名</small>
