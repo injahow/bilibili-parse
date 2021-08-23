@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.2
+// @version      1.6.3
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -389,10 +389,27 @@
                     break;
                 }
             }
+            // 判断RPC配置情况
+            if (config['rpc_domain'] !== old_config['rpc_domain']) {
+                if (!(config.rpc_domain.match('https://') || config.rpc_domain.match(/(localhost|127\.0\.0\.1)/))) {
+                    utils.MessageBox.alert('' +
+                        '检测到当前RPC为非本机的http接口，即将跳转到AriaNG网页控制台页面；' +
+                        '请查看控制台RPC接口参数是否正确，第一次加载会比较慢请耐心等待；' +
+                        '配置好后即可使用脚本进行远程下载<br/>使用期间不用关闭控制台页面！', () => {
+                            utils.open_ariang();
+                        });
+                }
+            }
         };
+
         window.onbeforeunload = () => {
             window.bp_save_config();
+            const bp_aria2_window = window.bp_aria2_window;
+            if (bp_aria2_window && !bp_aria2_window.closed) {
+                bp_aria2_window.close();
+            }
         };
+
         let help_clicked = false;
         window.bp_show_help = () => {
             if (help_clicked) {
@@ -511,6 +528,9 @@
     };
     // components_init
     (function () {
+
+        utils.open_ariang = open_ariang;
+
         // Video
         utils.Video = {
             download: (url, name, type) => {
@@ -518,16 +538,25 @@
                 if (type === 'blob') {
                     download_blob(url, filename);
                 } else if (type === 'rpc') {
-                    download_rpc(url, filename);
+                    download_rpc(url, filename, rpc_type());
                 }
             },
-            download_all
+            download_all,
         };
+
+        function rpc_type() {
+            if (config.rpc_domain.match('https://') || config.rpc_domain.match(/localhost|127.0.0.1/)) {
+                return 'post';
+            } else {
+                return 'ariang';
+            }
+        }
 
         function download_all() {
 
             const [auth_id, auth_sec] = [
-                localStorage.getItem('bp_auth_id'), localStorage.getItem('bp_auth_sec'),
+                localStorage.getItem('bp_auth_id'),
+                localStorage.getItem('bp_auth_sec')
             ];
             const video_base = VideoStatus.base();
             const [type, q, total] = [
@@ -621,7 +650,7 @@
             });
 
             function get_url(videos, i, video_urls) {
-                // 单线递归处理，请求下载同时进行，设置任务容量为4
+                // 单线递归处理，请求下载同时进行
                 if (videos.length) {
                     if (i < videos.length) {
                         const video = videos[i];
@@ -640,13 +669,21 @@
                                         } else if (res.url.match('.mp4')) {
                                             video_format = '.mp4';
                                         }
-                                        video_urls.push({
-                                            url: res.url,
-                                            filename: video.filename + video_format
-                                        });
-                                        if (video_urls.length > 3) {
-                                            download_rpc_all(video_urls)
-                                            video_urls.length = 0;
+                                        const type = rpc_type();
+                                        if (type === 'post') {
+                                            video_urls.push({
+                                                url: res.url,
+                                                filename: video.filename + video_format
+                                            });
+                                            if (video_urls.length > 3) {
+                                                download_rpc_all(video_urls)
+                                                video_urls.length = 0;
+                                            }
+                                        } else if (type === 'ariang') {
+                                            download_rpc_one_by_one({
+                                                url: res.url,
+                                                filename: video.filename + video_format
+                                            });
                                         }
                                     } else {
                                         utils.Message.warning(`第${i + 1}个视频请求失败：` + res.message);
@@ -663,10 +700,13 @@
                         }, 2000);
                     } else {
                         utils.MessageBox.alert('视频地址请求完成！');
-                        if (video_urls.length > 0) {
-                            download_rpc_all(video_urls);
-                            video_urls.length = 0;
+                        if (rpc_type() === 'post') {
+                            if (video_urls.length > 0) {
+                                download_rpc_all(video_urls);
+                                video_urls.length = 0;
+                            }
                         }
+                        // one by one -> null
                     }
                 }
             }
@@ -676,8 +716,9 @@
                     domain: config.rpc_domain,
                     port: config.rpc_port,
                     token: config.rpc_token,
-                    dir: config.rpc_dir,
+                    dir: config.rpc_dir
                 };
+                utils.Message.info('发送RPC下载请求');
                 const json_rpc = [];
                 for (const video of video_urls) {
                     json_rpc.push({
@@ -713,9 +754,29 @@
             }
         }
 
+        function download_rpc_one_by_one(video) {
+            const bp_aria2_window = window.bp_aria2_window;
+            let time = 100;
+            if (!bp_aria2_window || bp_aria2_window.closed) {
+                open_ariang();
+                time = 3000;
+            }
+            setTimeout(() => {
+                const bp_aria2_window = window.bp_aria2_window;
+                const aria2_header = `header=User-Agent:${window.navigator.userAgent}&header=Referer:${window.location.href}`;
+                if (bp_aria2_window && !bp_aria2_window.closed) {
+                    const task_hash = `#!/new/task?url=${window.btoa(video.url)}&out=${video.filename.replace(/#/g, '%23')}&${aria2_header}`;
+                    bp_aria2_window.location.href = `http://aria2.injahow.cn/${task_hash}`;
+                    utils.Message.success('RPC请求成功');
+                } else {
+                    utils.Message.warning('RPC请求失败');
+                }
+            }, time);
+        }
+
         let download_rpc_clicked = false;
 
-        function download_rpc(url, filename) {
+        function download_rpc(url, filename, type = 'post') {
             if (download_rpc_clicked) {
                 utils.Message.warning('(^・ω・^)~喵喵喵~');
                 return;
@@ -725,7 +786,7 @@
                 domain: config.rpc_domain,
                 port: config.rpc_port,
                 token: config.rpc_token,
-                dir: config.rpc_dir,
+                dir: config.rpc_dir
             };
             const json_rpc = {
                 id: window.btoa(`BParse_${Date.now()}_${Math.random()}`),
@@ -741,23 +802,60 @@
                 }]
             };
             utils.Message.info('发送RPC下载请求');
-            $.ajax(`${rpc.domain}:${rpc.port}/jsonrpc`, {
-                type: 'POST',
-                dataType: 'json',
-                data: JSON.stringify(json_rpc),
-                success: (res) => {
-                    if (res.result) {
+            if (type === 'post') {
+                $.ajax(`${rpc.domain}:${rpc.port}/jsonrpc`, {
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify(json_rpc),
+                    success: (res) => {
+                        if (res.result) {
+                            utils.Message.success('RPC请求成功');
+                        } else {
+                            utils.Message.warning('RPC请求失败');
+                        }
+                        download_rpc_clicked = false;
+                    },
+                    error: () => {
+                        utils.Message.danger('RPC请求异常，请确认RPC服务配置及软件运行状态');
+                        download_rpc_clicked = false;
+                    }
+                });
+            } else if (type === 'ariang') {
+                const bp_aria2_window = window.bp_aria2_window;
+                let time = 100;
+                if (!bp_aria2_window || bp_aria2_window.closed) {
+                    open_ariang();
+                    time = 3000;
+                }
+                setTimeout(() => {
+                    const bp_aria2_window = window.bp_aria2_window;
+                    const aria2_header = `header=User-Agent:${window.navigator.userAgent}&header=Referer:${window.location.href}`;
+                    const task_hash = `#!/new/task?url=${window.btoa(url)}&out=${filename.replace(/#/g, '%23')}&${aria2_header}`;
+                    if (bp_aria2_window && !bp_aria2_window.closed) {
+                        bp_aria2_window.location.href = `http://aria2.injahow.cn/${task_hash}`;
                         utils.Message.success('RPC请求成功');
                     } else {
                         utils.Message.warning('RPC请求失败');
                     }
                     download_rpc_clicked = false;
-                },
-                error: () => {
-                    utils.Message.danger('RPC请求异常，请确认RPC服务配置及软件运行状态');
-                    download_rpc_clicked = false;
-                }
-            });
+                }, time);
+            }
+        }
+
+        function open_ariang() {
+            const a = document.createElement('a');
+            const rpc = {
+                domain: config.rpc_domain,
+                port: config.rpc_port,
+                token: config.rpc_token,
+                dir: config.rpc_dir
+            };
+            const url = `http://aria2.injahow.cn/#!/settings/rpc/set/${rpc.domain.replace('://', '/')}/${rpc.port}/jsonrpc/${window.btoa(rpc.token)}`;
+            a.setAttribute('target', '_blank');
+            a.setAttribute('onclick', `window.bp_aria2_window=window.open('${url}');`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
         }
 
         let download_blob_clicked = false, need_show_progress = true;
@@ -799,7 +897,7 @@
                     a.download = filename;
                     document.body.appendChild(a);
                     a.click();
-                    document.body.removeChild(a);
+                    a.remove();
                     URL.revokeObjectURL(blob_url);
                 }
             };
@@ -1590,8 +1688,8 @@
                     $('#video_url_2').attr('href')
                 ];
                 const msg = '建议使用IDM、FDM等软件安装其浏览器插件后，鼠标右键点击链接下载~<br/><br/>' +
-                    `<a href="${video_url}" target="_blank">视频地址</a><br/><br/>` +
-                    (config.format === 'dash' ? `<a href="${video_url_2}" target="_blank">音频地址</a>` : '');
+                    `<a href="${video_url}" target="_blank" style="text-decoration:underline;">&gt;视频地址&lt;</a><br/><br/>` +
+                    (config.format === 'dash' ? `<a href="${video_url_2}" target="_blank" style="text-decoration:underline;">&gt;音频地址&lt;</a>` : '');
                 utils.MessageBox.alert(msg);
             } else if (type === 'aria') {
                 const [video_url, video_url_2] = [
