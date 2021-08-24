@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.3
+// @version      1.6.4
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -680,7 +680,7 @@
                                                 video_urls.length = 0;
                                             }
                                         } else if (type === 'ariang') {
-                                            download_rpc_one_by_one({
+                                            download_rpc_ariang_one({
                                                 url: res.url,
                                                 filename: video.filename + video_format
                                             });
@@ -718,7 +718,6 @@
                     token: config.rpc_token,
                     dir: config.rpc_dir
                 };
-                utils.Message.info('发送RPC下载请求');
                 const json_rpc = [];
                 for (const video of video_urls) {
                     json_rpc.push({
@@ -754,7 +753,7 @@
             }
         }
 
-        function download_rpc_one_by_one(video) {
+        function download_rpc_ariang_one(video) {
             const bp_aria2_window = window.bp_aria2_window;
             let time = 100;
             if (!bp_aria2_window || bp_aria2_window.closed) {
@@ -967,9 +966,9 @@
             // 恢复原视频
             recover_player();
             // 暂停原视频
-            bili_video_stop();
             const bili_video = $(bili_video_tag())[0];
-            !!bili_video && bili_video.addEventListener('play', bili_video_stop, false);
+            bili_video_stop(bili_video);
+            !!bili_video && bili_video.addEventListener('play', bili_video_stop(bili_video), false);
 
             if (!!$('#bilibiliPlayer')[0]) {
                 bili_player_id = '#bilibiliPlayer';
@@ -1134,9 +1133,8 @@
             }
         }
 
-        function bili_video_stop() { // listener
-            let bili_video;
-            if (bili_video = $(bili_video_tag())[0]) {
+        function bili_video_stop(bili_video) { // listener
+            if (bili_video) {
                 bili_video.pause();
                 bili_video.currentTime = 0;
             }
@@ -1146,7 +1144,7 @@
             if (window.my_dplayer) {
                 utils.Message.info('恢复播放器');
                 const bili_video = $(bili_video_tag())[0];
-                !!bili_video && bili_video.removeEventListener('play', bili_video_stop, false);
+                !!bili_video && bili_video.removeEventListener('play', bili_video_stop(bili_video), false);
                 window.my_dplayer.destroy();
                 window.my_dplayer = null;
                 $('#my_dplayer').remove();
