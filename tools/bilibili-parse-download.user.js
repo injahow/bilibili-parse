@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.4
+// @version      1.6.5
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -967,8 +967,8 @@
             recover_player();
             // 暂停原视频
             const bili_video = $(bili_video_tag())[0];
-            bili_video_stop(bili_video);
-            !!bili_video && bili_video.addEventListener('play', bili_video_stop(bili_video), false);
+            bili_video_stop();
+            !!bili_video && bili_video.addEventListener('play', bili_video_stop, false);
 
             if (!!$('#bilibiliPlayer')[0]) {
                 bili_player_id = '#bilibiliPlayer';
@@ -1126,14 +1126,15 @@
         }
 
         function bili_video_tag() {
-            if (!!$('video[crossorigin="anonymous"]')[0]) {
-                return 'video[crossorigin="anonymous"]';
+            if (!!$('video[class!="dplayer-video dplayer-video-current"]')[0]) {
+                return 'video[class!="dplayer-video dplayer-video-current"]';
             } else if (!!$('bwp-video')[0]) {
                 return 'bwp-video';
             }
         }
 
-        function bili_video_stop(bili_video) { // listener
+        function bili_video_stop() { // listener
+            const bili_video = $(bili_video_tag())[0];
             if (bili_video) {
                 bili_video.pause();
                 bili_video.currentTime = 0;
@@ -1144,7 +1145,7 @@
             if (window.my_dplayer) {
                 utils.Message.info('恢复播放器');
                 const bili_video = $(bili_video_tag())[0];
-                !!bili_video && bili_video.removeEventListener('play', bili_video_stop(bili_video), false);
+                !!bili_video && bili_video.removeEventListener('play', bili_video_stop, false);
                 window.my_dplayer.destroy();
                 window.my_dplayer = null;
                 $('#my_dplayer').remove();
