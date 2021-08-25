@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.6
+// @version      1.6.7
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -484,7 +484,7 @@
                         <small>提示：web和url方式下载不会设置文件名</small>
                     </div>
                     <div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | 密钥 | 保存目录 ]</label><br />
-                        <input id="rpc_domain" value="..." style="width:20%;"> :
+                        <input id="rpc_domain" value="..." style="width:25%;"> :
                         <input id="rpc_port" value="..." style="width:10%;"> |
                         <input id="rpc_token" placeholder="没有密钥不用填" value="..." style="width:15%;"> |
                         <input id="rpc_dir" placeholder="留空使用默认目录" value="..." style="width:20%;"><br />
@@ -502,7 +502,7 @@
                             <option value="0">关闭</option>
                             <option value="1">开启</option>
                         </select><br />
-                        <small>说明：请求地址成功后是否自动点击下载视频按钮</small>
+                        <small>说明：请求地址成功后将自动点击下载视频按钮</small>
                     </div>
                     <div style="margin:2% 0;"><label>授权状态：</label>
                         <select name="auth" id="auth" disabled>
@@ -670,6 +670,7 @@
                                 dataType: 'json',
                                 success: (res) => {
                                     if (!res.code) {
+                                        utils.Message.success('请求成功' + (res.times ? `<br/>今日剩余请求次数${res.times}` : ''));
                                         utils.MessageBox.alert(`${msg}：获取成功！`);
                                         let video_format = '';
                                         if (res.url.match('.flv')) {
@@ -772,7 +773,7 @@
                 const bp_aria2_window = window.bp_aria2_window;
                 const aria2_header = `header=User-Agent:${window.navigator.userAgent}&header=Referer:${window.location.href}`;
                 if (bp_aria2_window && !bp_aria2_window.closed) {
-                    const task_hash = `#!/new/task?url=${window.btoa(video.url)}&out=${video.filename.replace(/#/g, '%23')}&${aria2_header}`;
+                    const task_hash = `#!/new/task?url=${window.btoa(video.url)}&out=${encodeURIComponent(video.filename)}&${aria2_header}`;
                     bp_aria2_window.location.href = `http://aria2.injahow.cn/${task_hash}`;
                     utils.Message.success('RPC请求成功');
                 } else {
@@ -837,7 +838,7 @@
                 setTimeout(() => {
                     const bp_aria2_window = window.bp_aria2_window;
                     const aria2_header = `header=User-Agent:${window.navigator.userAgent}&header=Referer:${window.location.href}`;
-                    const task_hash = `#!/new/task?url=${window.btoa(url)}&out=${filename.replace(/#/g, '%23')}&${aria2_header}`;
+                    const task_hash = `#!/new/task?url=${window.btoa(url)}&out=${encodeURIComponent(filename)}&${aria2_header}`;
                     if (bp_aria2_window && !bp_aria2_window.closed) {
                         bp_aria2_window.location.href = `http://aria2.injahow.cn/${task_hash}`;
                         utils.Message.success('RPC请求成功');
@@ -854,8 +855,7 @@
             const rpc = {
                 domain: config.rpc_domain,
                 port: config.rpc_port,
-                token: config.rpc_token,
-                dir: config.rpc_dir
+                token: config.rpc_token
             };
             const url = `http://aria2.injahow.cn/#!/settings/rpc/set/${rpc.domain.replace('://', '/')}/${rpc.port}/jsonrpc/${window.btoa(rpc.token)}`;
             a.setAttribute('target', '_blank');
@@ -1752,9 +1752,9 @@
             if (type === 'web') {
                 $('#video_url_2')[0].click();
             } else if (type === 'a') {
-                $('#video_download')[0].click();
+                $('#video_download').click();
             } else if (type === 'aria') {
-                $('#video_download')[0].click();
+                $('#video_download').click();
             } else {
                 const url = $('#video_url_2').attr('href');
                 let file_name = VideoStatus.base().filename();
@@ -1812,7 +1812,7 @@
                 dataType: 'json',
                 success: (res) => {
                     if (res && !res.code) {
-                        utils.Message.success('请求成功');
+                        utils.Message.success('请求成功' + (res.times ? `<br/>今日剩余请求次数${res.times}` : ''));
                         const url = config.format === 'dash' ? res.video.replace('http://', 'https://') : res.url.replace('http://', 'https://');
                         const url_2 = config.format === 'dash' ? res.audio.replace('http://', 'https://') : '#';
                         $('#video_url').attr('href', url);
