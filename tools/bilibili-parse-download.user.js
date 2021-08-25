@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.5
+// @version      1.6.6
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -355,7 +355,8 @@
         rpc_domain: 'http://localhost',
         rpc_port: '16800',
         rpc_token: '',
-        rpc_dir: 'D:/'
+        rpc_dir: 'D:/',
+        auto_download: '0'
     };
     // config_init
     (function () {
@@ -495,6 +496,13 @@
                             <option value="1">开启</option>
                         </select><br />
                         <small>说明：强制使用请求到的视频地址和第三方播放器进行播放</small>
+                    </div>
+                    <div style="margin:2% 0;"><label>自动下载：</label>
+                        <select name="auto_download" id="auto_download">
+                            <option value="0">关闭</option>
+                            <option value="1">开启</option>
+                        </select><br />
+                        <small>说明：请求地址成功后是否自动点击下载视频按钮</small>
                     </div>
                     <div style="margin:2% 0;"><label>授权状态：</label>
                         <select name="auth" id="auth" disabled>
@@ -777,7 +785,7 @@
 
         function download_rpc(url, filename, type = 'post') {
             if (download_rpc_clicked) {
-                utils.Message.warning('(^・ω・^)~喵喵喵~');
+                utils.Message.info('(^・ω・^)~喵喵喵~');
                 return;
             }
             download_rpc_clicked = true;
@@ -876,7 +884,7 @@
 
         function download_blob(url, filename) {
             if (download_blob_clicked) {
-                utils.Message.warning('(^・ω・^)~喵喵喵~');
+                utils.Message.info('(^・ω・^)~喵喵喵~');
                 need_show_progress = true;
                 return;
             }
@@ -1789,6 +1797,9 @@
                     if (UserStatus.need_replace() || video_base.is_limited() || config.replace_force === '1') {
                         !$('#my_dplayer')[0] && utils.Player.replace(url, url_2);
                     }
+                    if (config.auto_download === '1') {
+                        $('#video_download').click();
+                    }
                 }
                 return;
             }
@@ -1812,6 +1823,9 @@
                         }
                         if (UserStatus.need_replace() || video_base.is_limited() || config.replace_force === '1') {
                             utils.Player.replace(url, url_2);
+                        }
+                        if (config.auto_download === '1') {
+                            $('#video_download').click();
                         }
                     } else {
                         utils.Message.warning('请求失败：' + res.message);
