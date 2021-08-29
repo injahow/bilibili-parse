@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.7
+// @version      1.6.8
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -623,7 +623,7 @@
                     </select>
                 </div>
                 <div style="margin:2% 0;">
-                    <label>视频质量：当前使用${q_map[`${q}`]}</label>
+                    <label>视频质量：当前使用${q_map[`${q}`]}（${q}）</label>
                 </div>
                 <b>
                     <span style="color:red;">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！！！</span>
@@ -774,7 +774,7 @@
                 const aria2_header = `header=User-Agent:${window.navigator.userAgent}&header=Referer:${window.location.href}`;
                 if (bp_aria2_window && !bp_aria2_window.closed) {
                     const task_hash = `#!/new/task?url=${window.btoa(video.url)}&out=${encodeURIComponent(video.filename)}&${aria2_header}`;
-                    bp_aria2_window.location.href = `http://aria2.injahow.cn/${task_hash}`;
+                    bp_aria2_window.location.href = `http://ariang.injahow.com/${task_hash}`;
                     utils.Message.success('RPC请求成功');
                 } else {
                     utils.Message.warning('RPC请求失败');
@@ -840,7 +840,7 @@
                     const aria2_header = `header=User-Agent:${window.navigator.userAgent}&header=Referer:${window.location.href}`;
                     const task_hash = `#!/new/task?url=${window.btoa(url)}&out=${encodeURIComponent(filename)}&${aria2_header}`;
                     if (bp_aria2_window && !bp_aria2_window.closed) {
-                        bp_aria2_window.location.href = `http://aria2.injahow.cn/${task_hash}`;
+                        bp_aria2_window.location.href = `http://ariang.injahow.com/${task_hash}`;
                         utils.Message.success('RPC请求成功');
                     } else {
                         utils.Message.warning('RPC请求失败');
@@ -857,7 +857,7 @@
                 port: config.rpc_port,
                 token: config.rpc_token
             };
-            const url = `http://aria2.injahow.cn/#!/settings/rpc/set/${rpc.domain.replace('://', '/')}/${rpc.port}/jsonrpc/${window.btoa(rpc.token)}`;
+            const url = `http://ariang.injahow.com/#!/settings/rpc/set/${rpc.domain.replace('://', '/')}/${rpc.port}/jsonrpc/${window.btoa(rpc.token)}`;
             a.setAttribute('target', '_blank');
             a.setAttribute('onclick', `window.bp_aria2_window=window.open('${url}');`);
             document.body.appendChild(a);
@@ -1468,7 +1468,7 @@
                         return state.epPayMent.vipNeedPay;
                     },
                     is_limited: () => {
-                        return state.epInfo.badge === '受限';
+                        return !!state.mediaInfo.season_title.match(/（(僅|仅)限.*地(區|区)）/g);
                     }
                 };
             } else if (_type === 'cheese') {
@@ -1661,6 +1661,7 @@
         }, 3000);
 
         $('body').on('click', '#setting_btn', function () {
+            UserStatus.lazy_init(true); // init
             // set form by config
             for (const key in config) {
                 $(`#${key}`).val(config[key]);
@@ -1670,6 +1671,7 @@
         });
 
         $('body').on('click', '#video_download_all', function () {
+            UserStatus.lazy_init(true); // init
             if (localStorage.getItem('bp_auth_id') && localStorage.getItem('bp_auth_sec')) {
                 if (config.download_type === 'rpc') {
                     utils.Video.download_all();
