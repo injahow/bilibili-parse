@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.8
+// @version      1.6.9
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -604,16 +604,21 @@
             });
 
             const q_map = {
-                '120': '超清 4K',
-                '116': '高清 1080P60',
-                '112': '高清 1080P+',
-                '80': '高清 1080P',
-                '74': '高清 720P60',
-                '64': '高清 720P',
-                '48': '高清 720P (MP4)',
-                '32': '清晰 480P',
-                '16': '流畅 360P'
+                '120': '4K 超清',
+                '116': '1080P 60帧',
+                '112': '1080P 高码率',
+                '80': '1080P 高清',
+                '74': '720P 60帧',
+                '64': '720P 高清',
+                '48': '720P 高清(MP4)',
+                '32': '480P 清晰',
+                '16': '360P 流畅'
             };
+            const quality_support = VideoStatus.get_quality_support();
+            let option_support_html = '';
+            for (const item of quality_support) {
+                option_support_html += `<option value="${item}" selected>${q_map[item]}</option>`;
+            }
             const msg = '' +
                 `<div style="margin:2% 0;">
                     <label>视频格式：</label>
@@ -623,7 +628,10 @@
                     </select>
                 </div>
                 <div style="margin:2% 0;">
-                    <label>视频质量：当前使用${q_map[`${q}`]}（${q}）</label>
+                    <label>视频质量：</label>
+                    <select name="dl_quality" id="dl_quality">
+                        ${option_support_html}
+                    </select>
                 </div>
                 <b>
                     <span style="color:red;">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！！！</span>
@@ -635,7 +643,11 @@
                 <div style="margin:2% 0;">
                     <button id="checkbox_btn">全选</button>
                 </div>`;
+
             utils.MessageBox.confirm(msg, () => {
+                // 获取参数
+                let _q = $('#dl_quality').val() || q;
+
                 const videos = [];
                 for (let i = 0; i < total; i++) {
                     if (!$(`input#option_${i}`).is(':checked')) {
@@ -650,12 +662,14 @@
                     ];
                     const format = $('#dl_format').val();
                     videos.push({
-                        url: `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${q}&type=${type}&format=${format}&otype=json&auth_id=${auth_id}&auth_sec=${auth_sec}&s`,
+                        url: `${config.base_api}?av=${aid}&p=${p}&cid=${cid}&ep=${epid}&q=${_q}&type=${type}&format=${format}&otype=json&auth_id=${auth_id}&auth_sec=${auth_sec}&s`,
                         filename: filename
                     });
                 }
                 get_url(videos, 0, []);
             });
+            // 初始化参数
+            $('#dl_quality').val(q);
 
             function get_url(videos, i, video_urls) {
                 // 单线递归处理，请求下载同时进行
@@ -1134,10 +1148,10 @@
         }
 
         function bili_video_tag() {
-            if (!!$('video[class!="dplayer-video dplayer-video-current"]')[0]) {
-                return 'video[class!="dplayer-video dplayer-video-current"]';
-            } else if (!!$('bwp-video')[0]) {
+            if (!!$('bwp-video')[0]) {
                 return 'bwp-video';
+            } else if (!!$('video[class!="dplayer-video dplayer-video-current"]')[0]) {
+                return 'video[class!="dplayer-video dplayer-video-current"]';
             }
         }
 
@@ -1307,8 +1321,8 @@
     let VideoStatus;
     (function () {
         VideoStatus = {
-            type,
-            base, get_quality
+            type, base,
+            get_quality, get_quality_support
         };
 
         function type() {
@@ -1542,6 +1556,26 @@
                 _q = _q_max > 80 ? 80 : _q_max;
             }
             return { q: _q, q_max: _q_max };
+        }
+
+        function get_quality_support() {
+            let list, quality_list = [];
+            if (!!$('li.bui-select-item')[0]) {
+                list = $('li.bui-select-item');
+            } else if (!!$('li.squirtle-select-item')[0]) {
+                list = $('li.squirtle-select-item');
+            }
+            if (list && list.length) {
+                list.each(function () {
+                    const q = `${$(this).attr('data-value')}`;
+                    if (q === '0') {
+                        return false;
+                    }
+                    quality_list.push(q);
+                });
+                return quality_list;
+            }
+            return ['80', '64', '32', '16'];
         }
 
     })();
