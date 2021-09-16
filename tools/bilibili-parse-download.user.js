@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.10
+// @version      1.6.11
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -133,7 +133,7 @@
                 } else if (config.base_api !== localStorage.getItem('bp_pre_base_api') || (Date.now() - parseInt(auth_time) > 24 * 60 * 60 * 1000)) {
                     // check key
                     if (access_key) {
-                        $.ajax(`${config.base_api}/auth/v2/?act=check&auth_id=${auth_id}&auth_sec=${auth_sec}&access_key=${access_key}`, {
+                        $.ajax(`https://api.bilibili.com/x/space/myinfo?access_key=${access_key}`, {
                             type: 'GET',
                             dataType: 'json',
                             success: (res) => {
@@ -145,9 +145,19 @@
                                     });
                                 } else {
                                     localStorage.setItem('bp_auth_time', Date.now());
+                                    $.ajax(`${config.base_api}/auth/v2/?act=check&auth_id=${auth_id}&auth_sec=${auth_sec}&access_key=${access_key}`, {
+                                        type: 'GET',
+                                        dataType: 'json',
+                                        success: () => {
+                                            utils.Message.success('授权检查通过');
+                                        },
+                                        error: () => {
+                                            utils.Message.danger('授权检查异常');
+                                        }
+                                    });
                                 }
                             },
-                            error: () => {
+                            error: (e) => {
                                 utils.Message.danger('检查key请求异常');
                             }
                         });
