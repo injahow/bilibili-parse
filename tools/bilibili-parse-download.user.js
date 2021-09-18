@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.6.11
+// @version      1.7.0
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
@@ -148,8 +148,10 @@
                                     $.ajax(`${config.base_api}/auth/v2/?act=check&auth_id=${auth_id}&auth_sec=${auth_sec}&access_key=${access_key}`, {
                                         type: 'GET',
                                         dataType: 'json',
-                                        success: () => {
-                                            utils.Message.success('授权检查通过');
+                                        success: (res) => {
+                                            if (res.code) {
+                                                utils.Message.warning('授权检查失败：' + res.message);
+                                            }
                                         },
                                         error: () => {
                                             utils.Message.danger('授权检查异常');
@@ -157,7 +159,7 @@
                                     });
                                 }
                             },
-                            error: (e) => {
+                            error: () => {
                                 utils.Message.danger('检查key请求异常');
                             }
                         });
@@ -401,7 +403,7 @@
                 }
             }
             // 判断RPC配置情况
-            if (config['rpc_domain'] !== old_config['rpc_domain']) {
+            if (config.rpc_domain !== old_config.rpc_domain) {
                 if (!(config.rpc_domain.match('https://') || config.rpc_domain.match(/(localhost|127\.0\.0\.1)/))) {
                     utils.MessageBox.alert('' +
                         '检测到当前RPC为非本机的http接口，即将跳转到AriaNG网页控制台页面；' +
@@ -481,7 +483,7 @@
                             <option value="dash">DASH</option>
                             <option value="mp4">MP4</option>
                         </select><br />
-                        <small>注意：番剧暂不支持MP4请求</small>
+                        <small>注意：仅video类别支持MP4请求</small>
                     </div>
                     <div style="margin:2% 0;"><label>下载方式：</label>
                         <select name="download_type" id="download_type">
@@ -491,7 +493,7 @@
                             <option value="rpc">RPC接口</option>
                             <option value="aria">Aria命令</option>
                         </select><br />
-                        <small>提示：web和url方式下载不会设置文件名</small>
+                        <small>提示：url和web方式下载不会设置文件名</small>
                     </div>
                     <div style="margin:2% 0;"><label>RPC配置：[ 域名 : 端口 | 密钥 | 保存目录 ]</label><br />
                         <input id="rpc_domain" value="..." style="width:25%;"> :
@@ -563,7 +565,7 @@
         };
 
         function rpc_type() {
-            if (config.rpc_domain.match('https://') || config.rpc_domain.match(/localhost|127.0.0.1/)) {
+            if (config.rpc_domain.match('https://') || config.rpc_domain.match(/localhost|127\.0\.0\.1/)) {
                 return 'post';
             } else {
                 return 'ariang';
@@ -627,7 +629,7 @@
             const quality_support = VideoStatus.get_quality_support();
             let option_support_html = '';
             for (const item of quality_support) {
-                option_support_html += `<option value="${item}" selected>${q_map[item]}</option>`;
+                option_support_html += `<option value="${item}">${q_map[item]}</option>`;
             }
             const msg = '' +
                 `<div style="margin:2% 0;">
