@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         bilibili视频下载
 // @namespace    https://github.com/injahow
-// @version      1.7.0
+// @version      1.7.1
 // @description  支持Web、RPC、Blob、Aria等下载方式；支持flv、dash、mp4视频格式；支持下载港区番剧；支持会员下载；支持换源播放，自动切换为高清视频源
 // @author       injahow
 // @source       https://github.com/injahow/bilibili-parse
 // @copyright    2021, injahow (https://github.com/injahow)
-// @updateURL    https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
-// @downloadURL  https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js
+// @updateURL    https://greasyfork.org/scripts/413228-bilibili%E8%A7%86%E9%A2%91%E4%B8%8B%E8%BD%BD/code/bilibili%E8%A7%86%E9%A2%91%E4%B8%8B%E8%BD%BD.user.js
+// @downloadURL  https://greasyfork.org/scripts/413228-bilibili%E8%A7%86%E9%A2%91%E4%B8%8B%E8%BD%BD/code/bilibili%E8%A7%86%E9%A2%91%E4%B8%8B%E8%BD%BD.user.js
 // @include      *://www.bilibili.com/video/av*
 // @include      *://www.bilibili.com/video/BV*
 // @include      *://www.bilibili.com/medialist/play/*
@@ -475,7 +475,7 @@
                     </span>
                     <div style="margin:2% 0;"><label>请求地址：</label>
                         <input id="base_api" value="..." style="width:50%;"><br />
-                        <small>普通使用请勿修改，默认地址：https://api.injahow.cn/bparse/</small>
+                        <small>普通使用请勿修改</small>
                     </div>
                     <div style="margin:2% 0;"><label>视频格式：</label>
                         <select name="format" id="format">
@@ -646,7 +646,7 @@
                     </select>
                 </div>
                 <b>
-                    <span style="color:red;">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！！！</span>
+                    <span style="color:red;">为避免请求被拦截，设置了延时且不支持下载无法播放的视频；请勿频繁下载过多视频，可能触发风控导致不可再下载！</span>
                 </b><br />
                 <div style="height:220px;width:100%;overflow:auto;background:rgba(0,0,0,0.1);">
                     ${video_html}
