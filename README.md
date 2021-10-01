@@ -26,7 +26,7 @@
 
 ## Tools
 
-- [bilibili-parse-download.user.js](https://github.com/injahow/bilibili-parse/raw/master/tools/bilibili-parse-download.user.js)
+- [bilibili-download.user.js](https://greasyfork.org/zh-CN/scripts/413228-bilibili%E8%A7%86%E9%A2%91%E4%B8%8B%E8%BD%BD)
 
 ## Requirement
 
