@@ -34,7 +34,7 @@
     fetch('./README.md').then(res => {
       if (res.ok) {
         res.text().then(text => {
-          document.getElementById('content').innerHTML = marked(text)
+          document.getElementById('content').innerHTML = marked.parse(text)
         })
       }
     })
