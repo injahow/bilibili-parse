@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.5
+ * Version 0.4.6
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -94,7 +94,7 @@ class Bilibili
     {
         $value = intval($value);
         if (!$force) {
-            $suppose = array(120, 116, 112, 80, 74, 64, 48, 32, 16); // todo
+            $suppose = array(127, 125, 120, 116, 112, 80, 74, 64, 48, 32, 16); // todo
             foreach ($suppose as $v) {
                 if ($v <= $value) {
                     $this->quality = $v;
