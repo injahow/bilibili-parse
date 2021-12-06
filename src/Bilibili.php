@@ -343,7 +343,7 @@ class Bilibili
             case 'dash':
                 $api['body'] += array(
                     'fnver' => 0,
-                    'fnval' => $this->format == 'dash' ? 80 : 0,
+                    'fnval' => $this->format == 'dash' ? 2000 : 0,
                     'fourk' => 1
                 );
                 break;
@@ -391,7 +391,7 @@ class Bilibili
                 'otype'      => 'json',
                 'ep_id'      => $this->epid,
                 'fnver'      => '0',
-                'fnval'      => $this->format == 'dash' ? 80 : 0,
+                'fnval'      => $this->format == 'dash' ? 2000 : 0,
                 'fourk'      => 1,
                 'access_key' => $this->access_key
             ),
@@ -414,7 +414,7 @@ class Bilibili
                 'otype'      => 'json',
                 'ep_id'      => $this->epid,
                 'fnver'      => '0',
-                'fnval'      => $this->format == 'dash' ? 80 : 0,
+                'fnval'      => $this->format == 'dash' ? 2000 : 0,
                 'fourk'      => 1,
                 'access_key' => $this->access_key
             ),
