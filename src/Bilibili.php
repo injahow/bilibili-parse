@@ -208,7 +208,7 @@ class Bilibili
                         $index = 0;
                         $find = 0;
                         foreach ($data['dash']['video'] as $i => $video) {
-                            if ($video['id'] == $this->quality) {
+                            if ($video['id'] <= $this->quality) {
                                 $index = $i;
                                 $find = 1;
                                 break;
@@ -413,8 +413,8 @@ class Bilibili
                 'type'       => '',
                 'otype'      => 'json',
                 'ep_id'      => $this->epid,
-                'fnver'      => '0',
-                'fnval'      => $this->format == 'dash' ? 4048 : 0,
+                'fnver'      => $this->format == 'dash' ? 0 : 1,
+                'fnval'      => 4048,
                 'fourk'      => 1,
                 'access_key' => $this->access_key
             ),
@@ -532,7 +532,8 @@ class Bilibili
         $entropy = 'rbMCKn@KuamXWlPMoJGsKcbiJKUfkPF_8dABscJntvqhRSETg';
         $entropy_array = str_split(strrev($entropy), 1);
         $str = '';
-        for ($i = 0; $i < strlen($entropy); ++$i) {
+        $len = strlen($entropy);
+        for ($i = 0; $i < $len; ++$i) {
             $str .= chr(ord($entropy_array[$i]) + 2);
         }
         list($this->appkey, $this->sec) = explode(':', $str);
