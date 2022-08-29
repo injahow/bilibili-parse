@@ -44,10 +44,7 @@ $bp = new Bilibili($type); //video or bangumi
 // $bp->cache(true, 'apcu')->cache_time(3600);
 
 $bp->epid($ep);
-$bp->aid($av)->bvid($bv)->page($p);
-if (!empty($_GET['cid'])) {
-    $bp->cid($_GET['cid']);
-}
+$bp->aid($av)->bvid($bv)->page($p)->cid($cid);
 $bp->quality($q)->format($format);
 
 $result = json_decode($bp->result(), true);
