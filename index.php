@@ -5,7 +5,7 @@ header('Access-Control-Allow-Methods: GET');
 
 $av = isset($_GET['av']) ? intval($_GET['av']) : 0;
 $bv = isset($_GET['bv']) ? $_GET['bv'] : '';
-$cid = isset($_GET['cid']) ? $_GET['cid'] : '';
+$cid = isset($_GET['cid']) ? intval($_GET['cid']) : 0;
 $ep = isset($_GET['ep']) ? intval($_GET['ep']) : 0;
 
 if (!$av && !$bv && !$ep) {
