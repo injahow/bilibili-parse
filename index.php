@@ -19,7 +19,7 @@ if (!$av && !$bv && !$ep) {
 $otype = isset($_GET['otype']) ? $_GET['otype'] : 'json';
 $otype = in_array($otype, ['json', 'url', 'dplayer']) ? $otype : 'json';
 
-// only for mp4
+// only for video mp4
 if ($otype == 'dplayer') {
     $file_path = __DIR__ . '/public/dplayer.html';
     if (file_exists($file_path)) {
@@ -44,9 +44,8 @@ $bp = new Bilibili($type); //video or bangumi
 // need apcu
 // $bp->cache(true, 'apcu')->cache_time(3600);
 
-$bp->epid($ep);
-$bp->aid($av)->bvid($bv)->page($p)->cid($cid);
-$bp->quality($q)->format($format);
+$bp->aid($av)->bvid($bv)->cid($cid)->epid($ep);
+$bp->page($p)->quality($q)->format($format);
 
 $result = json_decode($bp->result(), true);
 

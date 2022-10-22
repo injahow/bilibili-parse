@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.6
+ * Version 0.4.7
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -158,7 +158,7 @@ class Bilibili
         return $this;
     }
 
-    public function video()
+    public function data()
     {
         if (empty($this->cid)) {
             $this->setCid();
@@ -171,16 +171,10 @@ class Bilibili
             )]);
         }
 
-        if ($this->type == 'video') {
-            if (empty($this->access_key) && !$this->has_cookie && $this->format != 'dash') {
-                $api = $this->bilibili_video_api();
-            } else {
-                $api = $this->bilibili_api();
-            }
-        } else if ($this->type == 'bangumi') {
-            $api = $this->bilibili_bangumi_api();
+        if ($this->type == 'video' && $this->format != 'dash' && empty($this->access_key) && !$this->has_cookie) {
+            $api = $this->bilibili_api();
         } else {
-            $api = $this->bilibili_cheese_api();
+            $api = $this->bilibili_web_api();
         }
 
         return $this->exec($api);
@@ -196,99 +190,78 @@ class Bilibili
             }
         }
 
-        $data = $this->video();
+        $data = $this->data();
         $raw = json_decode($this->raw, true);
-        if (!empty($raw['code'])) {
+        if (!empty($raw['code']))
             return $this->raw;
-        } else {
-            $data = json_decode($data, true)[0];
-            switch ($this->format) {
-                case 'dash':
-                    if (isset($data['dash'])) {
-                        $index = 0;
-                        $find = 0;
-                        foreach ($data['dash']['video'] as $i => $video) {
-                            if ($video['id'] <= $this->quality) {
-                                $index = $i;
-                                $find = 1;
-                                break;
-                            }
-                        }
 
-                        if ($data['accept_quality'][0] >= 80 && $find == 0) { // ?
+        $data = json_decode($data, true)[0];
 
-                            return json_encode(array(
-                                'code'           => 1,
-                                'accept_quality' => $data['accept_quality'],
-                                'message'        => '可能需要会员或未知参数quality'
-                            ));
-                        }
+        if (!empty($data['is_preview']))
+            return json_encode(array(
+                'code'    => 1,
+                'message' => '需要会员播放'
+            ));
 
-                        $this->result = json_encode(array(
-                            'code'           => 0,
-                            'quality'        => $data['dash']['video'][$index]['id'],
-                            'accept_quality' => $data['accept_quality'],
-                            'video'          => $data['dash']['video'][$index]['base_url'],
-                            'audio'          => $data['dash']['audio'][0]['base_url']
-                        ));
-                    } else { // ? durl
-
-                        return json_encode(array(
-                            'code'    => 1,
-                            'message' => '可能是会员付费视频'
-                        ));
-                    }
-                    break;
-
-                case 'flv':
-
-                    if (in_array($this->type, ['bangumi', 'cheese'])) {
-                        if (isset($data['format']) && $data['format'] == 'mp4' && $data['quality'] != 16) {
-
-                            return json_encode(array(
-                                'code'    => 1,
-                                'message' => '可能需要会员或付费播放'
-                            ));
+        $result = null;
+        switch ($this->format) {
+            case 'dash':
+                if (isset($data['dash'])) {
+                    $index = 0;
+                    foreach ($data['dash']['video'] as $i => $video) {
+                        if ($video['id'] <= $this->quality) {
+                            $index = $i;
+                            break;
                         }
                     }
+                    $result = array(
+                        'code'           => 0,
+                        'quality'        => $data['dash']['video'][$index]['id'],
+                        'accept_quality' => $data['accept_quality'],
+                        'video'          => $data['dash']['video'][$index]['base_url'],
+                        'audio'          => $data['dash']['audio'][0]['base_url']
+                    );
+                }
+                break;
 
-                    if ($data['accept_quality'][0] >= 80 && $this->quality != $data['quality']) {  // ?
-
-                        return json_encode(array(
-                            'code'           => 1,
-                            'accept_quality' => $data['accept_quality'],
-                            'message'        => '可能需要会员或未知参数quality'
-                        ));
-                    }
-
-                    $this->result = json_encode(array(
+            case 'flv':
+            case 'mp4':
+                if (isset($data['durl'])) {
+                    $result = array(
                         'code'           => 0,
                         'quality'        => $data['quality'],
                         'accept_quality' => $data['accept_quality'],
                         'url'            => $data['durl'][0]['url']
-                    ));
-
-                    break;
-
-                case 'mp4':
-                    if ($this->type == 'video') {
-                        $this->quality($data['quality'], true);
-                        $this->result = json_encode(array(
-                            'code'           => 0,
-                            'quality'        => $this->quality,
-                            'accept_quality' => $data['accept_quality'],
-                            'url'            => $data['durl'][0]['url']
-                        ));
-                    } else {
-                        // todo
-                        return json_encode(array(
-                            'code'    => 1,
-                            'message' => '暂不支持该类视频的MP4请求'
-                        ));
-                    }
-                    break;
-            }
+                    );
+                }
+                break;
         }
+
+        if (empty($result))
+            return json_encode(array(
+                'code'    => 1,
+                'message' => '获取信息失败'
+            ));
+
+
+        if (in_array($this->quality, $result['accept_quality'])) {
+            $quality = $this->quality;
+        } else { // 修正quality
+            foreach ($result['accept_quality'] as $v) {
+                if ($v <= $this->quality) {
+                    $quality = $v;
+                    break;
+                }
+            }
+            if (!isset($quality)) $quality = $result['accept_quality'][0];
+        }
+        if ($result['quality'] < $quality && $result['accept_quality'][0] >= $quality)
+            return json_encode(array(
+                'code'    => 1,
+                'message' => '视频清晰度受限，需要会员'
+            ));
+
+        $this->result = json_encode($result);
 
         if ($this->cache) {
             $this->setCache($this->result);
@@ -305,7 +278,7 @@ class Bilibili
         else
             $suffix = $this->quality . '_' . $this->format;
 
-        if (!isset($this->cid)) $this->setCid();
+        if (empty($this->cid)) $this->setCid();
 
         if (!empty($this->cid))
             $path = '/../cache/cid/' . $this->cid . '_' . $suffix . '.json';
@@ -317,42 +290,6 @@ class Bilibili
 
     private function bilibili_api()
     {
-        $api = array(
-            'method' => 'GET',
-            'url'    => 'https://api.bilibili.com/x/player/playurl',
-            'body'   => array(
-                'avid'       => $this->aid,
-                'bvid'       => $this->bvid,
-                'cid'        => $this->cid,
-                'qn'         => $this->format == 'flv' ? $this->quality : 0,
-                'type'       => $this->format == 'mp4' ? 'mp4' : '',
-                'otype'      => 'json',
-                'access_key' => $this->access_key
-            ),
-            'format' => 'data'
-        );
-
-        switch ($this->format) {
-            case 'mp4':
-                $api['body'] += array(
-                    'platform'     => 'html5',
-                    'high_quality' => 1
-                );
-                break;
-            case 'flv':
-            case 'dash':
-                $api['body'] += array(
-                    'fnver' => 0,
-                    'fnval' => $this->format == 'dash' ? 4048 : 0,
-                    'fourk' => 1
-                );
-                break;
-        }
-        return $api;
-    }
-
-    private function bilibili_video_api()
-    {
         $this->setAppkey();
 
         $api = array(
@@ -360,7 +297,7 @@ class Bilibili
             'url'    => array(
                 'flv' => 'https://interface.bilibili.com/v2/playurl',
                 'mp4' => 'https://app.bilibili.com/v2/playurlproj'
-            )[$this->format != 'flv' ? 'mp4' : 'flv'],
+            )[$this->format != 'flv' ? 'mp4' : 'flv'], // not dash
             'body'   => array(
                 'appkey'     => $this->appkey,
                 'cid'        => $this->cid,
@@ -376,50 +313,52 @@ class Bilibili
         return $api;
     }
 
-    private function bilibili_bangumi_api()
+    private function bilibili_web_api()
     {
-        return array(
-            'method' => 'GET',
-            'url'    => 'https://api.bilibili.com/pgc/player/web/playurl',
-            'body'   => array(
-                'avid'       => $this->aid,
-                'bvid'       => $this->bvid,
-                'cid'        => $this->cid,
-                'qn'         => $this->quality,
-                'quality'    => $this->quality,
-                'type'       => '',
-                'otype'      => 'json',
-                'ep_id'      => $this->epid,
-                'fnver'      => '0',
-                'fnval'      => $this->format == 'dash' ? 4048 : 0,
-                'fourk'      => 1,
-                'access_key' => $this->access_key
-            ),
-            'format' => 'result'
+        $body = array(
+            'avid'       => $this->aid,
+            'bvid'       => $this->bvid,
+            'cid'        => $this->cid,
+            'ep_id'      => $this->epid,
+            'qn'         => $this->format == 'mp4' ? 80 : $this->quality,
+            'type'       => $this->format,
+            'otype'      => 'json',
+            'fnver'      => $this->type == 'cheese' && $this->format == 'mp4' ? 1 : 0,
+            'fnval'      => array('dash' => 4048, 'flv' => 4049, 'mp4' => 80)[$this->format],
+            'fourk'      => 1,
+            'access_key' => $this->access_key
         );
-    }
 
-    private function bilibili_cheese_api()
-    {
-        return array(
-            'method' => 'GET',
-            'url'    => 'https://api.bilibili.com/pugv/player/web/playurl',
-            'body'   => array(
-                'avid'       => $this->aid,
-                'bvid'       => $this->bvid,
-                'cid'        => $this->cid,
-                'qn'         => $this->quality,
-                'quality'    => $this->quality,
-                'type'       => '',
-                'otype'      => 'json',
-                'ep_id'      => $this->epid,
-                'fnver'      => $this->format == 'dash' ? 0 : 1,
-                'fnval'      => 4048,
-                'fourk'      => 1,
-                'access_key' => $this->access_key
-            ),
-            'format' => 'data'
-        );
+        switch ($this->type) {
+            case 'video':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'https://api.bilibili.com/x/player/playurl',
+                    'body'   => $body,
+                    'format' => 'data'
+                );
+                break;
+
+            case 'bangumi':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'https://api.bilibili.com/pgc/player/web/playurl',
+                    'body'   => $body,
+                    'format' => 'result'
+                );
+                break;
+
+            case 'cheese':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'https://api.bilibili.com/pugv/player/web/playurl',
+                    'body'   => $body,
+                    'format' => 'data'
+                );
+                break;
+        }
+
+        return $api;
     }
 
     private function bangumi_season_id($media_id)
@@ -450,14 +389,7 @@ class Bilibili
     {
         $file_name = $this->getCacheName();
         if ($this->cache_type == 'file') {
-            if (!($f = fopen($file_name, 'w+'))) {
-                return;
-            }
-            if (!fwrite($f, $data)) {
-                fclose($f);
-                return;
-            }
-            fclose($f);
+            file_put_contents($file_name, $data);
         } else if ($this->cache_type == 'apcu') {
             apcu_store(md5($file_name), $data, $this->cache_time);
         }
@@ -467,10 +399,8 @@ class Bilibili
     {
         $file_name = $this->getCacheName();
         if ($this->cache_type == 'file') {
-            if (file_exists($file_name)) {
-                if ($_SERVER['REQUEST_TIME'] - filectime($file_name) < $this->cache_time) {
-                    return file_get_contents($file_name);
-                }
+            if (file_exists($file_name) && $_SERVER['REQUEST_TIME'] - filemtime($file_name) < $this->cache_time) {
+                return file_get_contents($file_name);
             }
             return null;
         } else if ($this->cache_type == 'apcu') {
@@ -503,7 +433,7 @@ class Bilibili
                     return;
                 }
             }
-        } else if (!(empty($this->aid) && empty($this->bvid))) {
+        } else if (!empty($this->aid) || !empty($this->bvid)) {
             $api = array(
                 'method' => 'GET',
                 'url'    => 'https://api.bilibili.com/x/web-interface/view',
@@ -517,11 +447,9 @@ class Bilibili
             $res = json_decode($this->exec($api), true);
             if (!isset($res[0])) return;
 
-            if ($this->type == 'bangumi') {
-                if (isset($res[0]['data'])) {
-                    $this->cid = $res[0]['data']['cid'];
-                }
-            } else
+            if ($this->type == 'bangumi' && isset($res[0]['data']))
+                $this->cid = $res[0]['data']['cid'];
+            else
                 $this->cid = $res[0]['cid'];
         }
     }
