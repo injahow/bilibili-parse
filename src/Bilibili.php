@@ -254,10 +254,10 @@ class Bilibili
             }
             if (!isset($quality)) $quality = $result['accept_quality'][0];
         }
-        if ($result['quality'] < $quality && $result['accept_quality'][0] >= $quality)
+        if ($this->format != 'mp4' && $result['quality'] < $quality && $quality <= $result['accept_quality'][0])
             return json_encode(array(
                 'code'    => 1,
-                'message' => '视频清晰度受限，需要会员'
+                'message' => '视频清晰度受限，可能需要会员'
             ));
 
         $this->result = json_encode($result);
