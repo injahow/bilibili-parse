@@ -243,7 +243,6 @@ class Bilibili
                 'message' => '获取信息失败'
             ));
 
-
         if (in_array($this->quality, $result['accept_quality'])) {
             $quality = $this->quality;
         } else { // 修正quality
