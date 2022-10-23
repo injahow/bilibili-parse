@@ -4,7 +4,7 @@
  * bilbili video api
  * https://injahow.com
  * https://github.com/injahow/bilibili-parse
- * Version 0.4.7
+ * Version 0.4.8
  *
  * Copyright 2019, injahow
  * Released under the MIT license
@@ -314,6 +314,7 @@ class Bilibili
 
     private function bilibili_web_api()
     {
+        $f = $this->type == 'cheese' && $this->format == 'mp4';
         $body = array(
             'avid'       => $this->aid,
             'bvid'       => $this->bvid,
@@ -322,11 +323,15 @@ class Bilibili
             'qn'         => $this->format == 'mp4' ? 80 : $this->quality,
             'type'       => $this->format,
             'otype'      => 'json',
-            'fnver'      => $this->type == 'cheese' && $this->format == 'mp4' ? 1 : 0,
-            'fnval'      => array('dash' => 4048, 'flv' => 4049, 'mp4' => 80)[$this->format],
+            'fnver'      => $f ? 1 : 0,
+            'fnval'      => $f ? 80 : array('dash' => 4048, 'flv' => 4049, 'mp4' => 0)[$this->format],
             'fourk'      => 1,
             'access_key' => $this->access_key
         );
+
+        if ($this->format == 'mp4') {
+            $body += array('platform' => 'html5', 'high_quality' => 1);
+        }
 
         switch ($this->type) {
             case 'video':
