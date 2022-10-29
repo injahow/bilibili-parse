@@ -4,8 +4,6 @@
 
 ## Descriptions
 
-- 这是参考 [you-get](https://github.com/soimort/you-get) 创建的 bilibili 视频解析 API
-
 | 参数名 |     含义     | 默认  |       可选       |
 | :----: | :----------: | :---: | :--------------: |
 |   av   | 视频 av 编号 |       |        -         |
