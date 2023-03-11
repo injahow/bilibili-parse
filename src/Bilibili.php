@@ -21,7 +21,7 @@ class Bilibili
     public $cid;
     public $quality = 32;
     public $type = 'video';
-    public $format = 'flv';
+    public $format = 'mp4';
     public $access_key;
 
     public $cache = false;
@@ -171,11 +171,12 @@ class Bilibili
             )]);
         }
 
-        if ($this->type == 'video' && $this->format != 'dash' && empty($this->access_key) && !$this->has_cookie) {
-            $api = $this->bilibili_api();
-        } else {
-            $api = $this->bilibili_web_api();
-        }
+        // if ($this->type == 'video' && $this->format != 'dash' && empty($this->access_key) && !$this->has_cookie) {
+        //     $api = $this->bilibili_api();
+        // } else {
+        //     $api = $this->bilibili_web_api();
+        // }
+        $api = $this->bilibili_web_api();
 
         return $this->exec($api);
     }
@@ -200,7 +201,7 @@ class Bilibili
         if (!empty($data['is_preview']))
             return json_encode(array(
                 'code'    => 1,
-                'message' => '需要会员播放'
+                'message' => '无访问权限'
             ));
 
         $result = null;
@@ -289,6 +290,7 @@ class Bilibili
 
     private function bilibili_api()
     {
+        // error
         $this->setAppkey();
 
         $api = array(
@@ -335,6 +337,7 @@ class Bilibili
 
         switch ($this->type) {
             case 'video':
+                $body['access_key'] = ''; // need cookie
                 $api = array(
                     'method' => 'GET',
                     'url'    => 'https://api.bilibili.com/x/player/playurl',
@@ -410,6 +413,7 @@ class Bilibili
         } else if ($this->cache_type == 'apcu') {
             return apcu_fetch(md5($file_name));
         }
+        return null;
     }
 
     private function setCid()
